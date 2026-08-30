@@ -225,21 +225,16 @@
         <span class="app-role inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg"><span class="h-1.5 w-1.5 rounded-full bg-blue-300"></span><?= htmlspecialchars($__sidebarBadgeLabel) ?></span>
       </div>
 
-      <?php foreach ($__sidebarGroups as $__sidebarGroup): ?>
-        <!-- Binuwasan ang pt-4 to pt-2.5 -->
-        <div class="px-6 pt-2.5 pb-1">
-          <span class="app-section-label text-[10px] font-bold uppercase tracking-[.16em]"><?= htmlspecialchars($__sidebarGroup['label']) ?></span>
-        </div>
-        <nav class="px-4 space-y-0.5">
-          <?php foreach ($__sidebarGroup['items'] as $__sidebarNavItem): ?>
-            <a href="<?= htmlspecialchars($__sidebarNavItem['href']) ?>" class="<?= $__sidebarActive === $__sidebarNavItem['key'] ? $__sidebarNavActive : $__sidebarNavInactive ?>">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4 shrink-0"><?= $__sidebarNavItem['icon'] ?></svg>
-              <?= $__sidebarNavItem['label'] ?>
-            </a>
-          <?php endforeach; ?>
-        </nav>
-      <?php endforeach; ?>
-    </div>
+      <nav class="px-4 space-y-0.5 mt-2">
+  <?php foreach ($__sidebarGroups as $__sidebarGroup): ?>
+    <?php foreach ($__sidebarGroup['items'] as $__sidebarNavItem): ?>
+      <a href="<?= htmlspecialchars($__sidebarNavItem['href']) ?>" class="<?= $__sidebarActive === $__sidebarNavItem['key'] ? $__sidebarNavActive : $__sidebarNavInactive ?>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4 shrink-0"><?= $__sidebarNavItem['icon'] ?></svg>
+        <?= $__sidebarNavItem['label'] ?>
+      </a>
+    <?php endforeach; ?>
+  <?php endforeach; ?>
+</nav>
 
     <div class="shrink-0">
       <?php if ($__sidebarRole !== 'staff'): ?>
