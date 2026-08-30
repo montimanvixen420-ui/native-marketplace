@@ -7,7 +7,8 @@
   $__sidebarActive = $active ?? '';
   $__sidebarName = $name ?? ($_SESSION['user_name'] ?? '');
 
-  $__sidebarNavBase = 'app-side-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200';
+  // Pinalitang py-2.5 sa py-1.5 at text-sm sa text-xs para mas compact at kasya agad sa screen
+  $__sidebarNavBase = 'app-side-link flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200';
   $__sidebarNavActive = "{$__sidebarNavBase} app-side-active";
   $__sidebarNavInactive = $__sidebarNavBase;
 
@@ -201,33 +202,38 @@
         <?php foreach ($__sidebarGroups as $__mobileGroup): ?>
           <p class="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400"><?= htmlspecialchars($__mobileGroup['label']) ?></p>
           <?php foreach ($__mobileGroup['items'] as $__mobileItem): ?>
-            <a href="<?= htmlspecialchars($__mobileItem['href']) ?>" class="block rounded-lg px-3 py-2.5 text-sm font-medium <?= $__sidebarActive === $__mobileItem['key'] ? 'bg-brand-light text-brand' : 'text-gray-700 dark:text-white/80' ?>"><?= $__mobileItem['label'] ?></a>
+            <a href="<?= htmlspecialchars($__mobileItem['href']) ?>" class="block rounded-lg px-3 py-2 text-sm font-medium <?= $__sidebarActive === $__mobileItem['key'] ? 'bg-brand-light text-brand' : 'text-gray-700 dark:text-white/80' ?>"><?= $__mobileItem['label'] ?></a>
           <?php endforeach; ?>
         <?php endforeach; ?>
-        <div class="mt-2 border-t border-gray-100 pt-2 dark:border-white/10"><a href="/logout" class="js-logout-link block rounded-lg px-3 py-2.5 text-sm font-semibold text-red-500">Log out</a></div>
+        <div class="mt-2 border-t border-gray-100 pt-2 dark:border-white/10"><a href="/logout" class="js-logout-link block rounded-lg px-3 py-2 text-sm font-semibold text-red-500">Log out</a></div>
       </div>
     </details>
   </div>
 </nav>
-<aside class="app-sidebar hidden md:flex min-h-screen sticky top-0 h-screen flex-col justify-between shrink-0 transition-colors">
-    <div class="flex-1 overflow-y-auto">
-      <div class="app-brand flex items-center gap-3 font-display font-extrabold text-xl px-6 py-6">
+
+<!-- Dinagdagan ng [scrollbar-width:none] at [&::-webkit-scrollbar]:hidden para siguradong tago ang scrollbar sa browser -->
+<aside class="app-sidebar hidden md:flex min-h-screen sticky top-0 h-screen flex-col justify-between shrink-0 transition-colors [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div class="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <!-- Binuwasan ang py-6 to py-4 -->
+      <div class="app-brand flex items-center gap-3 font-display font-extrabold text-xl px-6 py-4">
         <span class="app-brand-mark">T</span>
         TINDA
       </div>
 
-      <div class="px-6 pb-4">
-        <span class="app-role inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-lg"><span class="h-1.5 w-1.5 rounded-full bg-blue-300"></span><?= htmlspecialchars($__sidebarBadgeLabel) ?></span>
+      <!-- Binuwasan ang pb-4 to pb-2 -->
+      <div class="px-6 pb-2">
+        <span class="app-role inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg"><span class="h-1.5 w-1.5 rounded-full bg-blue-300"></span><?= htmlspecialchars($__sidebarBadgeLabel) ?></span>
       </div>
 
       <?php foreach ($__sidebarGroups as $__sidebarGroup): ?>
-        <div class="px-6 pt-4 pb-1.5">
+        <!-- Binuwasan ang pt-4 to pt-2.5 -->
+        <div class="px-6 pt-2.5 pb-1">
           <span class="app-section-label text-[10px] font-bold uppercase tracking-[.16em]"><?= htmlspecialchars($__sidebarGroup['label']) ?></span>
         </div>
-        <nav class="px-4 space-y-1">
+        <nav class="px-4 space-y-0.5">
           <?php foreach ($__sidebarGroup['items'] as $__sidebarNavItem): ?>
             <a href="<?= htmlspecialchars($__sidebarNavItem['href']) ?>" class="<?= $__sidebarActive === $__sidebarNavItem['key'] ? $__sidebarNavActive : $__sidebarNavInactive ?>">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-[18px] h-[18px] shrink-0"><?= $__sidebarNavItem['icon'] ?></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4 shrink-0"><?= $__sidebarNavItem['icon'] ?></svg>
               <?= $__sidebarNavItem['label'] ?>
             </a>
           <?php endforeach; ?>
@@ -237,31 +243,32 @@
 
     <div class="shrink-0">
       <?php if ($__sidebarRole !== 'staff'): ?>
-      <div class="app-footer-rule px-4 pt-3 pb-2 space-y-1 border-t">
+      <div class="app-footer-rule px-4 pt-2 pb-1 space-y-0.5 border-t">
         <?php if ($__sidebarRole !== 'superadmin'): ?>
           <a href="/feedback" class="<?= $__sidebarActive === 'feedback' ? $__sidebarNavActive : $__sidebarNavInactive ?>">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-[18px] h-[18px] shrink-0"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4 shrink-0"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
             Feedback
           </a>
         <?php endif; ?>
         <a href="/help" class="<?= $__sidebarActive === 'help' ? $__sidebarNavActive : $__sidebarNavInactive ?>">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-[18px] h-[18px] shrink-0"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 2-3 5"/><path d="M12 17h.01"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4 shrink-0"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 2-3 5"/><path d="M12 17h.01"/></svg>
           Help
         </a>
       </div>
       <?php endif; ?>
 
-      <div class="app-footer-rule px-4 pb-4 pt-3 border-t">
-        <div class="app-account flex items-center gap-2.5 px-3 py-3 rounded-xl transition-colors">
-          <div class="w-8 h-8 rounded-full bg-brand text-white text-xs font-semibold flex items-center justify-center shrink-0">
+      <!-- Binuwasan ang py-4 to py-2 -->
+      <div class="app-footer-rule px-4 pb-2 pt-2 border-t">
+        <div class="app-account flex items-center gap-2.5 px-3 py-2 rounded-xl transition-colors">
+          <div class="w-7 h-7 rounded-full bg-brand text-white text-xs font-semibold flex items-center justify-center shrink-0">
             <?= htmlspecialchars($__sidebarInitials ?: '?') ?>
           </div>
           <div class="min-w-0 flex-1">
-            <p class="app-account-name text-sm font-bold truncate"><?= htmlspecialchars($__sidebarName) ?></p>
-            <a href="/logout" class="js-logout-link text-xs text-gray-400 hover:text-white">Log out</a>
+            <p class="app-account-name text-xs font-bold truncate"><?= htmlspecialchars($__sidebarName) ?></p>
+            <a href="/logout" class="js-logout-link text-[11px] text-gray-400 hover:text-white">Log out</a>
           </div>
         </div>
-        <p class="text-[10px] text-gray-300 dark:text-white/20 text-center mt-3">© <?= date('Y') ?> TINDA Marketplace</p>
+        <p class="text-[9px] text-gray-300 dark:text-white/20 text-center mt-1.5">© <?= date('Y') ?> TINDA Marketplace</p>
       </div>
     </div>
   </aside>
