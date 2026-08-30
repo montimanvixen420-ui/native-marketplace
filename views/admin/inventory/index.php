@@ -1,66 +1,169 @@
-<div class="flex min-h-screen bg-gray-50 dark:bg-ink"><?php require __DIR__.'/../../partials/admin-sidebar.php'; ?>
-<main class="flex-1 px-5 py-7 md:px-8">
-    <h1 class="font-display text-2xl font-semibold text-gray-900">Seller inventory</h1>
-    <p class="mt-1 text-sm text-gray-500">Master stock. Transfer units to Seller POS or allocate them to branches from this inventory.</p>
-    <?php if(!empty($error)):?>
-        <p class="mt-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700"><?=htmlspecialchars($error)?></p>
-        <?php endif;?>
-        <div class="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
-            <table id="sellerInventoryTable" data-datatable class="w-full text-sm">
-                <thead>
-                    <tr class="border-b text-left text-xs uppercase text-gray-500">
-                        <th class="p-3">Product</th>
-                        <th class="p-3">Inventory stock</th>
-                        <th class="p-3">Transfer to POS</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach($products as $p): if((int)$p['stock']<1)continue;?>
-                        <tr class="border-b">
-                            <td class="p-3 font-medium"><?=htmlspecialchars($p['name'])?></td>
-                            <td class="p-3">
-                                <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 font-semibold text-blue-700">
-                                    <i data-lucide="warehouse" class="h-3.5 w-3.5"></i><?= (int)$p['stock']?> in inventory</span>
-                                </td>
-                                <td class="p-3">
-                                    <form action="/admin/inventory/transfer" method="post" class="js-confirm-form flex gap-2" data-title="Transfer stock to Seller POS?" data-text="This moves stock out of Seller Inventory and into Seller POS." data-confirm-text="Yes, transfer" data-confirm-color="#2563EB">
-                                        <input type="hidden" name="product_id" value="<?= (int)$p['id']?>">
-                                        <input type="hidden" name="direction" value="inventory_to_pos">
-                                        <input required min="1" max="<?= (int)$p['stock']?>" name="quantity" type="number" placeholder="Qty" class="w-20 rounded border px-2">
-                                        <button class="inline-flex items-center rounded bg-teal px-3 py-1 text-white"><i data-lucide="arrow-right-left" class="mr-1 h-4 w-4">                                         
-                                        </i>To POS
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        <?php endforeach;?>
-                    </tbody>
-                </table>
-            </div>
-            <h2 class="mt-8 font-display text-xl font-semibold text-gray-900">Seller POS stock</h2>
-            <div class="mt-3 overflow-hidden rounded-lg border border-gray-200 bg-white">
-                <table id="sellerPosStockTable" data-datatable class="w-full text-sm">
-                    <thead>
-                        <tr class="border-b text-left text-xs uppercase text-gray-500">
-                            <th class="p-3">Product</th><th class="p-3">POS stock</th>
-                            <th class="p-3">Return</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach($posProducts as $p):?>
-                            <tr class="border-b">
-                                <td class="p-3 font-medium"><?=htmlspecialchars($p['name'])?></td>
-                                <td class="p-3"><?= (int)$p['stock']?> in POS</td>
-                                <td class="p-3">
-                                    <form action="/admin/inventory/transfer" method="post" class="js-confirm-form flex gap-2" data-title="Return stock to Seller Inventory?" data-text="This moves the selected Seller POS stock back to Inventory." data-confirm-text="Yes, return" data-confirm-color="#2563EB"><input type="hidden" name="product_id" value="<?= (int)$p['id']?>">
-                                    <input type="hidden" name="direction" value="pos_to_inventory">
-                                    <input required min="1" max="<?= (int)$p['stock']?>" name="quantity" type="number" placeholder="Qty" class="w-20 rounded border px-2">
-                                    <button class="inline-flex items-center rounded border border-teal px-3 py-1 text-teal"><i data-lucide="undo-2" class="mr-1 h-4 w-4"></i>Return</button>
-                                </form>
-                            </td>
-                        </tr><?php endforeach;?>
-                    </tbody>
-                </table>
-            </div>
-        </main>
+<div class="flex min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors">
+
+  <?php require __DIR__ . '/../../partials/admin-sidebar.php'; ?>
+
+  <main class="flex-1 px-8 py-8">
+    <!-- Header Section -->
+    <div class="mb-8">
+      <h1 class="font-display font-semibold text-2xl text-gray-900 dark:text-white">Seller inventory</h1>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Master stock. Transfer units to Seller POS or allocate them to branches from this inventory.</p>
     </div>
+
+    <!-- Error Alert -->
+    <?php if(!empty($error)):?>
+      <div class="mb-6 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-4 text-sm text-red-700 dark:text-red-300 flex items-center gap-2 shadow-sm">
+        <i data-lucide="alert-circle" class="w-4 h-4 text-red-600 dark:text-red-400 shrink-0"></i>
+        <span><?= htmlspecialchars($error) ?></span>
+      </div>
+    <?php endif; ?>
+
+    <!-- Master Inventory Card & Table -->
+    <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden p-4 shadow-sm mb-10">
+      
+      <!-- Custom Search Toolbar for Seller Inventory -->
+      <div class="flex flex-col sm:flex-row items-center justify-end gap-3 mb-4">
+        <div class="relative w-full sm:w-72">
+          <i data-lucide="search" class="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input type="text" id="customSearchInventory" placeholder="Search master inventory..." class="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <select id="customEntriesInventory" class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm rounded-lg px-2 py-1.5 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="20">20</option>
+          </select>
+          <span class="text-sm text-gray-500 dark:text-gray-400">entries per page</span>
+        </div>
+      </div>
+
+      <table id="sellerInventoryTable" class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50">
+            <th class="px-5 py-3.5 font-semibold">Product</th>
+            <th class="px-5 py-3.5 font-semibold text-right">Inventory Stock</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+          <?php foreach($products as $p): if((int)$p['stock'] < 1) continue; ?>
+            <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/50 transition-colors">
+              <td class="px-5 py-4 font-semibold text-gray-900 dark:text-gray-100"><?= htmlspecialchars($p['name']) ?></td>
+              <td class="px-5 py-4 text-right whitespace-nowrap">
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 px-3 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300 shadow-sm">
+                  <i data-lucide="warehouse" class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400"></i>
+                  <?= (int)$p['stock'] ?> in inventory
+                </span>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- POS Stock Section Header -->
+    <h2 class="font-display text-xl font-semibold text-gray-900 dark:text-white mb-3">Seller POS stock</h2>
+
+    <!-- POS Stock Card & Table -->
+    <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden p-4 shadow-sm">
+      
+      <!-- Custom Search Toolbar for POS Stock -->
+      <div class="flex flex-col sm:flex-row items-center justify-end gap-3 mb-4">
+        <div class="relative w-full sm:w-72">
+          <i data-lucide="search" class="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input type="text" id="customSearchPos" placeholder="Search POS stock..." class="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <select id="customEntriesPos" class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm rounded-lg px-2 py-1.5 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="20">20</option>
+          </select>
+          <span class="text-sm text-gray-500 dark:text-gray-400">entries per page</span>
+        </div>
+      </div>
+
+      <table id="sellerPosStockTable" class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50">
+            <th class="px-5 py-3.5 font-semibold">Product</th>
+            <th class="px-5 py-3.5 font-semibold text-right">POS Stock</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+          <?php foreach($posProducts as $p): ?>
+            <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/50 transition-colors">
+              <td class="px-5 py-4 font-semibold text-gray-900 dark:text-gray-100"><?= htmlspecialchars($p['name']) ?></td>
+              <td class="px-5 py-4 text-right whitespace-nowrap">
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 shadow-sm">
+                  <i data-lucide="store" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>
+                  <?= (int)$p['stock'] ?> in POS
+                </span>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+</div>
+
+<!-- DataTables Scripts -->
+<link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.tailwindcss.css">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/2.1.8/js/dataTables.tailwindcss.js"></script>
+
+<!-- Lucide icons -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+<script>
+$(document).ready(function () {
+    // 1. Initialize Master Inventory Table
+    <?php if(!empty($products)): ?>
+    const invTable = $('#sellerInventoryTable').DataTable({
+        paging: true,
+        pageLength: 5,
+        lengthChange: false,
+        searching: true,
+        order: [[0, 'asc']],
+        layout: {
+            topStart: null,
+            topEnd: null,
+            bottomStart: 'info',
+            bottomEnd: 'paging'
+        },
+        drawCallback: function () { lucide.createIcons(); }
+    });
+
+    $('#customSearchInventory').on('keyup', function () { invTable.search(this.value).draw(); });
+    $('#customEntriesInventory').on('change', function () { invTable.page.len(this.value).draw(); });
+    <?php endif; ?>
+
+    // 2. Initialize POS Stock Table
+    <?php if(!empty($posProducts)): ?>
+    const posTable = $('#sellerPosStockTable').DataTable({
+        paging: true,
+        pageLength: 5,
+        lengthChange: false,
+        searching: true,
+        order: [[0, 'asc']],
+        layout: {
+            topStart: null,
+            topEnd: null,
+            bottomStart: 'info',
+            bottomEnd: 'paging'
+        },
+        drawCallback: function () { lucide.createIcons(); }
+    });
+
+    $('#customSearchPos').on('keyup', function () { posTable.search(this.value).draw(); });
+    $('#customEntriesPos').on('change', function () { posTable.page.len(this.value).draw(); });
+    <?php endif; ?>
+
+    lucide.createIcons();
+});
+</script>

@@ -1,7 +1,7 @@
 <div class="flex min-h-screen bg-gray-50">
 
   <?php require __DIR__ . '/../../partials/sidebar.php'; ?>
-<!-- TEST123 -->
+  <!-- TEST123 -->
   <main class="flex-1 px-8 py-8">
     <div class="flex items-center justify-between mb-6">
       <div>
@@ -25,23 +25,25 @@
       <?php endif; ?>
     </form>
 
-    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
-      <table data-datatable class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-gray-100 text-left text-xs text-gray-500">
-            <th class="px-5 py-3 font-medium">Title</th>
-            <th class="px-5 py-3 font-medium">Type</th>
-            <th class="px-5 py-3 font-medium">Status</th>
-            <th class="px-5 py-3 font-medium">Updated</th>
-            <th class="px-5 py-3 font-medium text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-          <?php if (empty($items)): ?>
-            <tr>
-              <td colspan="5" class="px-5 py-8 text-center text-gray-400">No content yet. Click "New content" to add your first banner, announcement, or site text.</td>
+    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden p-5">
+      <?php if (empty($items)): ?>
+        <!-- Empty State (Nasa labas ng table para hindi mag-error ang DataTables) -->
+        <div class="p-12 text-center text-gray-400">
+          <p class="font-medium text-base text-gray-700 mb-1">No content found</p>
+          <p class="text-sm">Click "New content" to add your first banner, announcement, or site text.</p>
+        </div>
+      <?php else: ?>
+        <table data-datatable class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-100 text-left text-xs text-gray-500">
+              <th class="px-5 py-3 font-medium">Title</th>
+              <th class="px-5 py-3 font-medium">Type</th>
+              <th class="px-5 py-3 font-medium">Status</th>
+              <th class="px-5 py-3 font-medium">Updated</th>
+              <th class="px-5 py-3 font-medium text-right">Actions</th>
             </tr>
-          <?php else: ?>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
             <?php
               $typeLabels = [
                   'banner' => 'Banner',
@@ -85,9 +87,9 @@
                 </td>
               </tr>
             <?php endforeach; ?>
-          <?php endif; ?>
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      <?php endif; ?>
     </div>
 
   </main>

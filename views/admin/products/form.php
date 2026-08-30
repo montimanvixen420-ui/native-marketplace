@@ -12,25 +12,31 @@ $sourceLabel = $sourceLabel ?? 'Seller inventory stock';
 $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inventory. The product details below will be used for your Seller POS listing.';
 ?>
 
-<div class="flex min-h-screen bg-gray-50">
+<div class="flex min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors">
 
   <?php require __DIR__ . '/../../partials/admin-sidebar.php'; ?>
 
   <main class="flex-1 px-8 py-8">
-    <div class="max-w-2xl">
-      <a href="<?= htmlspecialchars($backHref) ?>" class="text-sm text-gray-400 hover:text-teal">
+    <div class="max-w-3xl mx-auto">
+      
+      <!-- Back Link -->
+      <a href="<?= htmlspecialchars($backHref) ?>" class="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors mb-3">
         &larr; Back to products
       </a>
 
-      <h1 class="font-display font-semibold text-2xl text-gray-900 mt-2 mb-6">
+      <!-- Page Header -->
+      <h1 class="font-display font-semibold text-2xl text-gray-900 dark:text-white mb-6">
         <?= htmlspecialchars($formTitle) ?>
       </h1>
 
-      <div class="bg-white border border-gray-200 rounded-lg p-7">
+      <!-- Main Form Card -->
+      <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-6 sm:p-8 shadow-sm">
 
+        <!-- Error Alert -->
         <?php if (!empty($error)): ?>
-          <div class="mb-5 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
-            <?= htmlspecialchars($error) ?>
+          <div class="mb-6 text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 flex items-center gap-2">
+            <i data-lucide="alert-circle" class="w-4 h-4 text-red-600 dark:text-red-400 shrink-0"></i>
+            <span><?= htmlspecialchars($error) ?></span>
           </div>
         <?php endif; ?>
 
@@ -39,7 +45,7 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
           method="POST"
           action="<?= htmlspecialchars($formAction) ?>"
           enctype="multipart/form-data"
-          class="space-y-4"
+          class="space-y-5"
         >
 
           <?php if ($isEdit): ?>
@@ -50,9 +56,10 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
             >
           <?php endif; ?>
 
+          <!-- Inventory Source Select (Add Mode Only) -->
           <?php if (!$isEdit): ?>
             <div>
-              <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
                 <?= htmlspecialchars($sourceLabel) ?>
               </label>
 
@@ -60,7 +67,7 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
                 id="inventory_source_product_id"
                 name="inventory_source_product_id"
                 required
-                class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm"
+                class="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="">Select inventory stock...</option>
 
@@ -79,7 +86,7 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
                 <?php endforeach; ?>
               </select>
 
-              <p class="mt-1 text-xs text-gray-400">
+              <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
                 <?= htmlspecialchars($sourceHelp) ?>
               </p>
               <?php if ($managerMode): ?><input type="hidden" name="branch_source_variant_size" id="branch_source_variant_size"><input type="hidden" name="branch_source_variant_color" id="branch_source_variant_color"><?php endif; ?>
@@ -89,7 +96,7 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
 
           <!-- Product Name -->
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
               Product name
             </label>
 
@@ -99,65 +106,61 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
               name="name"
               required
               value="<?= htmlspecialchars($product['name'] ?? '') ?>"
-              class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal transition"
+              class="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
             >
           </div>
 
 
           <!-- Description -->
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
               Description
             </label>
 
             <textarea
               name="description"
               rows="3"
-              class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal transition"
+              class="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
             ><?= htmlspecialchars($product['description'] ?? '') ?></textarea>
           </div>
 
 
-          <!-- Fit Information -->
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
-              Fit information
-            </label>
+          <!-- Fit Information & Size Guide -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                Fit information
+              </label>
 
-            <input
-              type="text"
-              name="fit_information"
-              value="<?= htmlspecialchars($product['fit_information'] ?? '') ?>"
-              placeholder="e.g. True to size, stretchy fabric"
-              class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm"
-            >
-          </div>
-
-
-          <!-- Size Guide -->
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
-              Size guide
-            </label>
-
-            <textarea
-              name="size_guide"
-              rows="3"
-              placeholder="e.g. S: Bust 84cm, Waist 66cm | M: Bust 88cm, Waist 70cm"
-              class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm"
-            ><?= htmlspecialchars($product['size_guide'] ?? '') ?></textarea>
-
-            <p class="text-xs text-gray-400 mt-1">
-              Add measurements for each size in centimeters.
-            </p>
-          </div>
-
-
-          <!-- Price / Stock -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input
+                type="text"
+                name="fit_information"
+                value="<?= htmlspecialchars($product['fit_information'] ?? '') ?>"
+                placeholder="e.g. True to size, stretchy fabric"
+                class="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+            </div>
 
             <div>
-              <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                Size guide
+              </label>
+
+              <textarea
+                name="size_guide"
+                rows="2"
+                placeholder="e.g. S: Bust 84cm | M: Bust 88cm"
+                class="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              ><?= htmlspecialchars($product['size_guide'] ?? '') ?></textarea>
+            </div>
+          </div>
+
+
+          <!-- Price & Stock Quantity -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
                 Price (₱)
               </label>
 
@@ -168,12 +171,12 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
                 name="price"
                 required
                 value="<?= htmlspecialchars($product['price'] ?? '') ?>"
-                class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal transition"
+                class="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
               >
             </div>
 
             <div>
-              <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
                 Stock quantity
               </label>
 
@@ -184,24 +187,24 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
                 name="stock"
                 required
                 value="<?= htmlspecialchars($product['stock'] ?? '') ?>"
-                class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal transition"
+                class="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
               >
             </div>
 
           </div>
 
 
-          <!-- SIZE & COLOR VARIANTS -->
-          <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+          <!-- SIZE & COLOR VARIANTS CARD -->
+          <div class="border border-gray-200 dark:border-slate-700 rounded-xl p-4 bg-gray-50/50 dark:bg-slate-900/50">
 
             <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
 
               <div>
-                <p class="text-sm font-semibold text-gray-800">
+                <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">
                   Size &amp; color variants
                 </p>
 
-                <p class="text-xs text-gray-500">
+                <p class="text-xs text-gray-500 dark:text-gray-400">
                   Optional. Add only what you sell&mdash;one Small variant is valid.
                 </p>
               </div>
@@ -209,65 +212,32 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
               <button
                 type="button"
                 id="addVariant"
-                class="text-xs font-semibold text-teal hover:underline"
+                class="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline cursor-pointer"
               >
-                + Add
+                + Add Variant
               </button>
 
             </div>
 
 
-            <div id="variantRows" class="space-y-2">
+            <div id="variantRows" class="space-y-2.5">
 
               <?php foreach ($variants as $i => $variant): ?>
 
-                <div class="variant-row grid grid-cols-1 sm:grid-cols-[100px_minmax(0,1fr)_minmax(0,1fr)_90px_auto] gap-2 items-center">
+                <div class="variant-row grid grid-cols-1 sm:grid-cols-[110px_minmax(0,1fr)_minmax(0,1fr)_90px_auto] gap-2 items-center">
 
                   <!-- SIZE -->
                   <select
                     name="variants[<?= $i ?>][size]"
-                    class="w-full min-w-0 border border-gray-300 rounded-lg px-2.5 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                    class="w-full min-w-0 border border-gray-300 dark:border-slate-600 rounded-lg px-2.5 py-2 text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
-                    <option value="">
-                      Select Size
-                    </option>
-
-                    <option
-                      value="Small"
-                      <?= (($variant['size'] ?? '') === 'Small') ? 'selected' : '' ?>
-                    >
-                      Small
-                    </option>
-
-                    <option
-                      value="Medium"
-                      <?= (($variant['size'] ?? '') === 'Medium') ? 'selected' : '' ?>
-                    >
-                      Medium
-                    </option>
-
-                    <option
-                      value="Large"
-                      <?= (($variant['size'] ?? '') === 'Large') ? 'selected' : '' ?>
-                    >
-                      Large
-                    </option>
-
-                    <option
-                      value="XL"
-                      <?= (($variant['size'] ?? '') === 'XL') ? 'selected' : '' ?>
-                    >
-                      XL
-                    </option>
-
-                    <option
-                      value="XXL"
-                      <?= (($variant['size'] ?? '') === 'XXL') ? 'selected' : '' ?>
-                    >
-                      XXL
-                    </option>
+                    <option value="">Select Size</option>
+                    <option value="Small" <?= (($variant['size'] ?? '') === 'Small') ? 'selected' : '' ?>>Small</option>
+                    <option value="Medium" <?= (($variant['size'] ?? '') === 'Medium') ? 'selected' : '' ?>>Medium</option>
+                    <option value="Large" <?= (($variant['size'] ?? '') === 'Large') ? 'selected' : '' ?>>Large</option>
+                    <option value="XL" <?= (($variant['size'] ?? '') === 'XL') ? 'selected' : '' ?>>XL</option>
+                    <option value="XXL" <?= (($variant['size'] ?? '') === 'XXL') ? 'selected' : '' ?>>XXL</option>
                   </select>
-
 
                   <!-- COLOR -->
                   <input
@@ -275,9 +245,8 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
                     name="variants[<?= $i ?>][color]"
                     value="<?= htmlspecialchars(($variant['color'] ?? '') === 'N/A' ? '' : ($variant['color'] ?? '')) ?>"
                     placeholder="Color (optional)"
-                    class="w-full min-w-0 border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                    class="w-full min-w-0 border border-gray-300 dark:border-slate-600 rounded-lg px-2.5 py-2 text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
-
 
                   <!-- SKU -->
                   <input
@@ -285,9 +254,8 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
                     name="variants[<?= $i ?>][sku]"
                     value="<?= htmlspecialchars($variant['sku'] ?? '') ?>"
                     placeholder="SKU (optional)"
-                    class="w-full min-w-0 border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                    class="w-full min-w-0 border border-gray-300 dark:border-slate-600 rounded-lg px-2.5 py-2 text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
-
 
                   <!-- STOCK -->
                   <input
@@ -296,14 +264,13 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
                     name="variants[<?= $i ?>][stock]"
                     value="<?= htmlspecialchars($variant['stock'] ?? '') ?>"
                     placeholder="Stock"
-                    class="variant-stock w-full min-w-0 border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                    class="variant-stock w-full min-w-0 border border-gray-300 dark:border-slate-600 rounded-lg px-2.5 py-2 text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
-
 
                   <!-- REMOVE -->
                   <button
                     type="button"
-                    class="remove-variant whitespace-nowrap text-xs font-semibold text-red-600 hover:text-red-800 px-1"
+                    class="remove-variant whitespace-nowrap text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline px-1 cursor-pointer"
                   >
                     Remove
                   </button>
@@ -314,19 +281,18 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
 
             </div>
 
-
-            <p id="variantStockHelp" class="mt-2 text-xs text-gray-500">
+            <p id="variantStockHelp" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
               The total of all variant stocks must not exceed the product stock.
             </p>
 
           </div>
 
 
-          <!-- Category / Status -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- Category & Status -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
             <div>
-              <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
                 Category
               </label>
 
@@ -334,14 +300,13 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
                 type="text"
                 name="category"
                 value="<?= htmlspecialchars($product['category'] ?? '') ?>"
-                placeholder="e.g. Electronics"
-                class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal transition"
+                placeholder="e.g. Apparel"
+                class="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
               >
             </div>
 
-
             <div>
-              <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
                 Status
               </label>
 
@@ -349,19 +314,12 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
 
               <select
                 name="status"
-                class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal transition"
+                class="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
               >
-                <option
-                  value="active"
-                  <?= $currentStatus === 'active' ? 'selected' : '' ?>
-                >
+                <option value="active" <?= $currentStatus === 'active' ? 'selected' : '' ?>>
                   Available
                 </option>
-
-                <option
-                  value="inactive"
-                  <?= $currentStatus === 'inactive' ? 'selected' : '' ?>
-                >
+                <option value="inactive" <?= $currentStatus === 'inactive' ? 'selected' : '' ?>>
                   Hidden
                 </option>
               </select>
@@ -374,51 +332,48 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
           <!-- Product Image -->
           <div>
 
-            <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
               Product image (PNG or JPEG)
             </label>
 
             <?php if ($isEdit && !empty($product['image_url'])): ?>
-
               <div class="flex items-center gap-3 mb-2">
-
                 <img
                   src="/<?= htmlspecialchars($product['image_url']) ?>"
                   alt=""
-                  class="w-14 h-14 rounded-lg object-cover border border-gray-200"
+                  class="w-14 h-14 rounded-lg object-cover border border-gray-200 dark:border-slate-700"
                 >
-
-                <p class="text-xs text-gray-500">
+                <p class="text-xs text-gray-500 dark:text-gray-400">
                   Current image — upload a new file below to replace it.
                 </p>
-
               </div>
-
             <?php endif; ?>
-
 
             <input
               type="file"
               name="image"
               accept=".png,.jpg,.jpeg,image/png,image/jpeg"
               <?= $isEdit ? '' : 'required' ?>
-              class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-teal-light file:text-teal focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal transition"
+              class="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg px-3.5 py-2 text-sm text-gray-900 dark:text-gray-100 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 dark:file:bg-slate-800 dark:file:text-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
             >
 
-            <p class="text-xs text-gray-400 mt-1">
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
               PNG or JPEG only, max 5MB.
             </p>
 
           </div>
 
 
-          <!-- Submit -->
-          <button
-            type="submit"
-            class="w-full bg-amber text-ink rounded-lg py-2.5 text-sm font-semibold hover:opacity-90 transition"
-          >
-            <?= $isEdit ? 'Save changes' : 'Add product' ?>
-          </button>
+          <!-- Submit Action Button (Explicit Solid Green Color) -->
+          <div class="pt-2">
+            <button
+              type="submit"
+              style="background-color: #059669 !important; color: #ffffff !important;"
+              class="w-full rounded-lg py-3 text-sm font-bold shadow-md hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+            >
+              <?= $isEdit ? 'Save changes' : 'Add product' ?>
+            </button>
+          </div>
 
         </form>
 
@@ -430,7 +385,6 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
 
 
 <script>
-
 const stockSource = document.getElementById('inventory_source_product_id');
 const productStock = document.getElementById('product_stock');
 const productName = document.getElementById('product_name');
@@ -439,23 +393,14 @@ const variantHelp = document.getElementById('variantStockHelp');
 const branchSourceSize = document.getElementById('branch_source_variant_size');
 const branchSourceColor = document.getElementById('branch_source_variant_color');
 
-const deliveredStockLimit = Number(
-    <?= json_encode($sourceStockLimit ?? 0) ?>
-);
-
+const deliveredStockLimit = Number(<?= json_encode($sourceStockLimit ?? 0) ?>);
 
 function sourceLimit() {
-
     const option = stockSource && stockSource.selectedOptions[0];
-
     return option && option.value
         ? Number(option.dataset.quantity)
-        : (
-            deliveredStockLimit ||
-            Number(productStock.value || 0)
-        );
+        : (deliveredStockLimit || Number(productStock.value || 0));
 }
-
 
 function enforceProductStockLimit() {
     const limit = sourceLimit();
@@ -464,88 +409,49 @@ function enforceProductStockLimit() {
 }
 
 function updateVariantLimit() {
-
     const limit = sourceLimit();
-
-    const stocks = [
-        ...variantRows.querySelectorAll('.variant-stock')
-    ];
-
-    const total = stocks.reduce(
-        (sum, input) => sum + (Number(input.value) || 0),
-        0
-    );
-
+    const stocks = [...variantRows.querySelectorAll('.variant-stock')];
+    const total = stocks.reduce((sum, input) => sum + (Number(input.value) || 0), 0);
 
     stocks.forEach(input => {
-
         if (limit > 0) {
             input.max = limit;
         } else {
             input.removeAttribute('max');
         }
-
     });
 
-
-    const tooHigh =
-        limit >= 0 &&
-        stocks.length &&
-        total > limit;
-
+    const tooHigh = limit >= 0 && stocks.length && total > limit;
 
     if (stocks.length) {
-
-        variantHelp.textContent =
-            `Variant total: ${total}. Available product stock: ${limit}.`;
-
+        variantHelp.textContent = `Variant total: ${total}. Available product stock: ${limit}.`;
     } else {
-
-        variantHelp.textContent =
-            'The total of all variant stocks must not exceed the product stock.';
-
+        variantHelp.textContent = 'The total of all variant stocks must not exceed the product stock.';
     }
 
-
-    variantHelp.className =
-        'mt-2 text-xs ' +
-        (
-            tooHigh
-                ? 'text-red-600'
-                : 'text-gray-500'
-        );
-
+    variantHelp.className = 'mt-2 text-xs ' + (tooHigh ? 'text-red-600 font-bold' : 'text-gray-500 dark:text-gray-400');
 
     if (stocks.length) {
         productStock.value = total;
     }
 
-
     productStock.setCustomValidity(
-        tooHigh
-            ? 'Total variant stock cannot exceed the delivered stock.'
-            : ''
+        tooHigh ? 'Total variant stock cannot exceed the delivered stock.' : ''
     );
 }
 
-
 let variantIndex = <?= count($variants) ?>;
 
-
 function addVariantRow() {
-
     const idx = variantIndex++;
-
-
     variantRows.insertAdjacentHTML(
         'beforeend',
         `
-        <div class="variant-row grid grid-cols-1 sm:grid-cols-[100px_minmax(0,1fr)_minmax(0,1fr)_90px_auto] gap-2 items-center">
-
+        <div class="variant-row grid grid-cols-1 sm:grid-cols-[110px_minmax(0,1fr)_minmax(0,1fr)_90px_auto] gap-2 items-center">
             <!-- SIZE -->
             <select
                 name="variants[${idx}][size]"
-                class="w-full min-w-0 border border-gray-300 rounded-lg px-2.5 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                class="w-full min-w-0 border border-gray-300 dark:border-slate-600 rounded-lg px-2.5 py-2 text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
                 <option value="">Select Size</option>
                 <option value="Small">Small</option>
@@ -555,24 +461,21 @@ function addVariantRow() {
                 <option value="XXL">XXL</option>
             </select>
 
-
             <!-- COLOR -->
             <input
                 type="text"
                 name="variants[${idx}][color]"
                 placeholder="Color (optional)"
-                class="w-full min-w-0 border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                class="w-full min-w-0 border border-gray-300 dark:border-slate-600 rounded-lg px-2.5 py-2 text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
-
 
             <!-- SKU -->
             <input
                 type="text"
                 name="variants[${idx}][sku]"
                 placeholder="SKU (optional)"
-                class="w-full min-w-0 border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                class="w-full min-w-0 border border-gray-300 dark:border-slate-600 rounded-lg px-2.5 py-2 text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
-
 
             <!-- STOCK -->
             <input
@@ -580,107 +483,62 @@ function addVariantRow() {
                 min="0"
                 name="variants[${idx}][stock]"
                 placeholder="Stock"
-                class="variant-stock w-full min-w-0 border border-gray-300 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                class="variant-stock w-full min-w-0 border border-gray-300 dark:border-slate-600 rounded-lg px-2.5 py-2 text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
-
 
             <!-- REMOVE -->
             <button
                 type="button"
-                class="remove-variant whitespace-nowrap text-xs font-semibold text-red-600 hover:text-red-800 px-1"
+                class="remove-variant whitespace-nowrap text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline px-1 cursor-pointer"
             >
                 Remove
             </button>
-
         </div>
         `
     );
-
-
     updateVariantLimit();
 }
 
-
 document.getElementById('addVariant').onclick = addVariantRow;
 
-
-variantRows.addEventListener(
-    'click',
-    event => {
-
-        if (
-            event.target.classList.contains('remove-variant')
-        ) {
-
-            event.target
-                .closest('.variant-row')
-                .remove();
-
-            updateVariantLimit();
-        }
-
+variantRows.addEventListener('click', event => {
+    if (event.target.classList.contains('remove-variant')) {
+        event.target.closest('.variant-row').remove();
+        updateVariantLimit();
     }
-);
+});
 
-
-variantRows.addEventListener(
-    'input',
-    updateVariantLimit
-);
+variantRows.addEventListener('input', updateVariantLimit);
 
 productStock.addEventListener('input', function () {
     enforceProductStockLimit();
     updateVariantLimit();
 });
 
-
 if (stockSource) {
+    stockSource.addEventListener('change', function () {
+        const option = this.selectedOptions[0];
 
-    stockSource.addEventListener(
-        'change',
-        function () {
-
-            const option =
-                this.selectedOptions[0];
-
-
-            if (!option.value) {
-
-                productName.value = '';
-                productStock.value = '';
-
-                productStock.removeAttribute('max');
-                if (branchSourceSize) branchSourceSize.value = '';
-                if (branchSourceColor) branchSourceColor.value = '';
-
-                updateVariantLimit();
-
-                return;
-            }
-
-
-            productName.value =
-                option.dataset.name;
-
-
-            productStock.value =
-                option.dataset.quantity;
-
-
-            productStock.max =
-                option.dataset.quantity;
-
-            if (branchSourceSize) branchSourceSize.value = option.dataset.size || '';
-            if (branchSourceColor) branchSourceColor.value = option.dataset.color || '';
-
-
+        if (!option.value) {
+            productName.value = '';
+            productStock.value = '';
+            productStock.removeAttribute('max');
+            if (branchSourceSize) branchSourceSize.value = '';
+            if (branchSourceColor) branchSourceColor.value = '';
             updateVariantLimit();
-
+            return;
         }
-    );
 
+        productName.value = option.dataset.name;
+        productStock.value = option.dataset.quantity;
+        productStock.max = option.dataset.quantity;
+
+        if (branchSourceSize) branchSourceSize.value = option.dataset.size || '';
+        if (branchSourceColor) branchSourceColor.value = option.dataset.color || '';
+
+        updateVariantLimit();
+    });
 }
-
 
 if (stockSource && stockSource.value) {
     const initialSource = stockSource.selectedOptions[0];
@@ -689,10 +547,8 @@ if (stockSource && stockSource.value) {
     if (branchSourceColor) branchSourceColor.value = initialSource.dataset.color || '';
 }
 
-
 enforceProductStockLimit();
 updateVariantLimit();
-
 </script>
 
 <script>
@@ -703,8 +559,8 @@ updateVariantLimit();
     form.dataset.swalBound = '1';
 
     form.addEventListener('submit', function (e) {
-      if (form.dataset.confirmed === '1') return; // already confirmed, let it go through
-      if (!form.checkValidity()) return; // let native "required" validation show first
+      if (form.dataset.confirmed === '1') return;
+      if (!form.checkValidity()) return;
 
       e.preventDefault();
 
@@ -719,7 +575,7 @@ updateVariantLimit();
         showCancelButton: true,
         confirmButtonText: isEdit ? 'Yes, save' : 'Yes, add product',
         cancelButtonText: 'Cancel',
-        confirmButtonColor: '#0d9488',
+        confirmButtonColor: '#059669',
         cancelButtonColor: '#6b7280',
         reverseButtons: true,
       }).then(function (result) {

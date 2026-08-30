@@ -131,4 +131,5 @@ class Branch
             ORDER BY s.name, b.name';
         return $this->db->query($sql)->fetchAll();
     }
+
 }

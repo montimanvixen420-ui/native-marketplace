@@ -4,8 +4,11 @@
   // directly into the page's scope.
 
   $__sidebarRole = $_SESSION['user_role'] ?? '';
-  $__sidebarActive = $active ?? '';
   $__sidebarName = $name ?? ($_SESSION['user_name'] ?? '');
+
+  // Smart Active URL Detection
+  $__currentUri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+  $__sidebarActive = $active ?? '';
 
   // Pinalitang py-2.5 sa py-1.5 at text-sm sa text-xs para mas compact at kasya agad sa screen
   $__sidebarNavBase = 'app-side-link flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200';
@@ -22,7 +25,7 @@
   ];
 
   // Each role: array of groups. Each group: optional 'label' + 'items'.
- $__sidebarGroupsByRole = [
+  $__sidebarGroupsByRole = [
       'superadmin' => [
           ['label' => 'Menu', 'items' => [
               ['key' => 'overview', 'href' => '/superadmin/dashboard', 'label' => 'Overview',
@@ -155,7 +158,6 @@
                'icon' => '<path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/>'],
               ['key' => 'damaged-items', 'href' => '/manager/damaged-items', 'label' => 'Damaged Items',
                'icon' => '<path d="M12 2v6"/><path d="M12 16v6"/><path d="M4.93 4.93l4.24 4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="M2 12h6"/><path d="M16 12h6"/>'],
-               
           ]],
           ['label' => 'Team', 'items' => [
               ['key' => 'staff', 'href' => '/staff/manage', 'label' => 'Staff Management',
@@ -202,7 +204,14 @@
         <?php foreach ($__sidebarGroups as $__mobileGroup): ?>
           <p class="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400"><?= htmlspecialchars($__mobileGroup['label']) ?></p>
           <?php foreach ($__mobileGroup['items'] as $__mobileItem): ?>
-            <a href="<?= htmlspecialchars($__mobileItem['href']) ?>" class="block rounded-lg px-3 py-2 text-sm font-medium <?= $__sidebarActive === $__mobileItem['key'] ? 'bg-brand-light text-brand' : 'text-gray-700 dark:text-white/80' ?>"><?= $__mobileItem['label'] ?></a>
+            <?php 
+              $__mobileUrlMatches = ($__mobileItem['href'] === '/') 
+                ? ($__currentUri === '/') 
+                : str_starts_with($__currentUri, $__mobileItem['href']);
+
+              $__isMobileActive = $__mobileUrlMatches || (!empty($__sidebarActive) && $__sidebarActive === $__mobileItem['key']);
+            ?>
+            <a href="<?= htmlspecialchars($__mobileItem['href']) ?>" class="block rounded-lg px-3 py-2 text-sm font-medium <?= $__isMobileActive ? 'bg-brand-light text-brand' : 'text-gray-700 dark:text-white/80' ?>"><?= $__mobileItem['label'] ?></a>
           <?php endforeach; ?>
         <?php endforeach; ?>
         <div class="mt-2 border-t border-gray-100 pt-2 dark:border-white/10"><a href="/logout" class="js-logout-link block rounded-lg px-3 py-2 text-sm font-semibold text-red-500">Log out</a></div>
@@ -228,7 +237,15 @@
       <nav class="px-4 space-y-0.5 mt-2">
   <?php foreach ($__sidebarGroups as $__sidebarGroup): ?>
     <?php foreach ($__sidebarGroup['items'] as $__sidebarNavItem): ?>
-      <a href="<?= htmlspecialchars($__sidebarNavItem['href']) ?>" class="<?= $__sidebarActive === $__sidebarNavItem['key'] ? $__sidebarNavActive : $__sidebarNavInactive ?>">
+      <?php 
+        // Direct URL priority match
+        $__urlMatches = ($__sidebarNavItem['href'] === '/') 
+          ? ($__currentUri === '/') 
+          : str_starts_with($__currentUri, $__sidebarNavItem['href']);
+
+        $__isItemActive = $__urlMatches || (!empty($__sidebarActive) && $__sidebarActive === $__sidebarNavItem['key']);
+      ?>
+      <a href="<?= htmlspecialchars($__sidebarNavItem['href']) ?>" class="<?= $__isItemActive ? $__sidebarNavActive : $__sidebarNavInactive ?>">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4 shrink-0"><?= $__sidebarNavItem['icon'] ?></svg>
         <?= $__sidebarNavItem['label'] ?>
       </a>
@@ -240,12 +257,18 @@
       <?php if ($__sidebarRole !== 'staff'): ?>
       <div class="app-footer-rule px-4 pt-2 pb-1 space-y-0.5 border-t">
         <?php if ($__sidebarRole !== 'superadmin'): ?>
-          <a href="/feedback" class="<?= $__sidebarActive === 'feedback' ? $__sidebarNavActive : $__sidebarNavInactive ?>">
+          <?php 
+            $__isFeedbackActive = str_starts_with($__currentUri, '/feedback') || (!empty($__sidebarActive) && $__sidebarActive === 'feedback');
+          ?>
+          <a href="/feedback" class="<?= $__isFeedbackActive ? $__sidebarNavActive : $__sidebarNavInactive ?>">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4 shrink-0"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
             Feedback
           </a>
         <?php endif; ?>
-        <a href="/help" class="<?= $__sidebarActive === 'help' ? $__sidebarNavActive : $__sidebarNavInactive ?>">
+        <?php 
+          $__isHelpActive = str_starts_with($__currentUri, '/help') || (!empty($__sidebarActive) && $__sidebarActive === 'help');
+        ?>
+        <a href="/help" class="<?= $__isHelpActive ? $__sidebarNavActive : $__sidebarNavInactive ?>">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4 shrink-0"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 2-3 5"/><path d="M12 17h.01"/></svg>
           Help
         </a>
