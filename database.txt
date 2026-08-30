@@ -1,0 +1,686 @@
+-- MariaDB dump 10.19  Distrib 10.4.32-MariaDB, for Win64 (AMD64)
+--
+-- Host: 127.0.0.1    Database: tinda_marketplace
+-- ------------------------------------------------------
+-- Server version	10.4.32-MariaDB
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Current Database: `tinda_marketplace`
+--
+
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `tinda_marketplace` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */;
+
+USE `tinda_marketplace`;
+
+--
+-- Table structure for table `feedback`
+--
+
+DROP TABLE IF EXISTS `feedback`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `feedback` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int(10) unsigned DEFAULT NULL,
+  `subject` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  `status` enum('new','reviewed') NOT NULL DEFAULT 'new',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `fk_feedback_user` (`user_id`),
+  KEY `idx_feedback_status_created` (`status`,`created_at`),
+  CONSTRAINT `fk_feedback_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `feedback`
+--
+
+LOCK TABLES `feedback` WRITE;
+/*!40000 ALTER TABLE `feedback` DISABLE KEYS */;
+/*!40000 ALTER TABLE `feedback` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `order_items`
+--
+
+DROP TABLE IF EXISTS `order_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `order_items` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `order_id` int(10) unsigned NOT NULL,
+  `product_id` int(10) unsigned DEFAULT NULL,
+  `variant_id` int(10) unsigned DEFAULT NULL,
+  `product_name` varchar(255) NOT NULL,
+  `variant_label` varchar(120) DEFAULT NULL,
+  `unit_price` decimal(10,2) NOT NULL,
+  `quantity` int(10) unsigned NOT NULL,
+  `subtotal` decimal(10,2) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_order_items_order` (`order_id`),
+  KEY `idx_order_items_product` (`product_id`),
+  KEY `fk_order_items_variant` (`variant_id`),
+  CONSTRAINT `fk_order_items_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_order_items_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_order_items_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variants` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `order_items`
+--
+
+LOCK TABLES `order_items` WRITE;
+/*!40000 ALTER TABLE `order_items` DISABLE KEYS */;
+/*!40000 ALTER TABLE `order_items` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `orders`
+--
+
+DROP TABLE IF EXISTS `orders`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `orders` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `seller_id` int(10) unsigned NOT NULL,
+  `customer_id` int(10) unsigned DEFAULT NULL,
+  `customer_name` varchar(255) DEFAULT NULL,
+  `total_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `payment_method` enum('cash','gcash','card','other') NOT NULL DEFAULT 'cash',
+  `order_type` enum('pos','online') NOT NULL DEFAULT 'pos',
+  `status` enum('pending','packed','shipped','completed','cancelled','refunded') NOT NULL DEFAULT 'pending',
+  `courier` varchar(100) DEFAULT NULL,
+  `tracking_number` varchar(120) DEFAULT NULL,
+  `packed_at` datetime DEFAULT NULL,
+  `shipped_at` datetime DEFAULT NULL,
+  `delivered_at` datetime DEFAULT NULL,
+  `cancelled_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_orders_seller` (`seller_id`),
+  KEY `idx_orders_customer` (`customer_id`),
+  KEY `idx_orders_status` (`status`),
+  CONSTRAINT `fk_orders_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_orders_seller` FOREIGN KEY (`seller_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `orders`
+--
+
+LOCK TABLES `orders` WRITE;
+/*!40000 ALTER TABLE `orders` DISABLE KEYS */;
+/*!40000 ALTER TABLE `orders` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `password_resets`
+--
+
+DROP TABLE IF EXISTS `password_resets`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `password_resets` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int(10) unsigned NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `used_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `token_hash` (`token_hash`),
+  KEY `idx_password_resets_user` (`user_id`),
+  KEY `idx_password_resets_expiry` (`expires_at`),
+  CONSTRAINT `fk_password_resets_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `password_resets`
+--
+
+LOCK TABLES `password_resets` WRITE;
+/*!40000 ALTER TABLE `password_resets` DISABLE KEYS */;
+/*!40000 ALTER TABLE `password_resets` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `product_moderation_flags`
+--
+
+DROP TABLE IF EXISTS `product_moderation_flags`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `product_moderation_flags` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `product_id` int(10) unsigned NOT NULL,
+  `flag_type` enum('keyword','image') NOT NULL DEFAULT 'keyword',
+  `matched_keywords` text NOT NULL,
+  `status` enum('pending','approved','rejected','superseded') NOT NULL DEFAULT 'pending',
+  `reviewer_id` int(10) unsigned DEFAULT NULL,
+  `review_note` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `resolved_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_moderation_product` (`product_id`),
+  KEY `fk_moderation_reviewer` (`reviewer_id`),
+  KEY `idx_moderation_queue` (`status`,`flag_type`,`created_at`),
+  CONSTRAINT `fk_moderation_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_moderation_reviewer` FOREIGN KEY (`reviewer_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `product_moderation_flags`
+--
+
+LOCK TABLES `product_moderation_flags` WRITE;
+/*!40000 ALTER TABLE `product_moderation_flags` DISABLE KEYS */;
+/*!40000 ALTER TABLE `product_moderation_flags` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `product_reviews`
+--
+
+DROP TABLE IF EXISTS `product_reviews`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `product_reviews` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `order_item_id` int(10) unsigned NOT NULL,
+  `product_id` int(10) unsigned NOT NULL,
+  `customer_id` int(10) unsigned NOT NULL,
+  `rating` tinyint(3) unsigned NOT NULL,
+  `fit_feedback` enum('too_small','true_to_size','too_large') NOT NULL,
+  `comment` text DEFAULT NULL,
+  `photo_path` varchar(255) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_review_per_item` (`order_item_id`),
+  KEY `fk_review_product` (`product_id`),
+  KEY `fk_review_customer` (`customer_id`),
+  CONSTRAINT `fk_review_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_review_order_item` FOREIGN KEY (`order_item_id`) REFERENCES `order_items` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_review_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `chk_review_rating` CHECK (`rating` between 1 and 5)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `product_reviews`
+--
+
+LOCK TABLES `product_reviews` WRITE;
+/*!40000 ALTER TABLE `product_reviews` DISABLE KEYS */;
+/*!40000 ALTER TABLE `product_reviews` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `product_variants`
+--
+
+DROP TABLE IF EXISTS `product_variants`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `product_variants` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `product_id` int(10) unsigned NOT NULL,
+  `size` varchar(30) NOT NULL,
+  `color` varchar(50) NOT NULL,
+  `sku` varchar(100) DEFAULT NULL,
+  `stock` int(10) unsigned NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_product_variant` (`product_id`,`size`,`color`),
+  CONSTRAINT `fk_product_variants_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `product_variants`
+--
+
+LOCK TABLES `product_variants` WRITE;
+/*!40000 ALTER TABLE `product_variants` DISABLE KEYS */;
+/*!40000 ALTER TABLE `product_variants` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `products`
+--
+
+DROP TABLE IF EXISTS `products`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `products` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `seller_id` int(10) unsigned NOT NULL,
+  `stock_request_id` int(10) unsigned DEFAULT NULL,
+  `name` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `size_guide` text DEFAULT NULL,
+  `fit_information` varchar(255) DEFAULT NULL,
+  `price` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `stock` int(10) unsigned NOT NULL DEFAULT 0,
+  `category` varchar(100) DEFAULT NULL,
+  `image_url` varchar(255) DEFAULT NULL,
+  `status` enum('active','inactive','pending_review','rejected') NOT NULL DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_products_stock_request` (`stock_request_id`),
+  KEY `idx_products_seller` (`seller_id`),
+  KEY `idx_products_status` (`status`),
+  CONSTRAINT `fk_products_seller` FOREIGN KEY (`seller_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_products_stock_request` FOREIGN KEY (`stock_request_id`) REFERENCES `stock_requests` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `products`
+--
+
+LOCK TABLES `products` WRITE;
+/*!40000 ALTER TABLE `products` DISABLE KEYS */;
+/*!40000 ALTER TABLE `products` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `prohibited_items`
+--
+
+DROP TABLE IF EXISTS `prohibited_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `prohibited_items` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `item_name` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_prohibited_item_name` (`item_name`)
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `prohibited_items`
+--
+
+LOCK TABLES `prohibited_items` WRITE;
+/*!40000 ALTER TABLE `prohibited_items` DISABLE KEYS */;
+INSERT INTO `prohibited_items` VALUES (1,'firearm','Firearms and weapon listings are prohibited.','2026-08-09 09:51:10','2026-08-09 09:51:10'),(2,'pistol','Firearms and weapon listings are prohibited.','2026-08-09 09:51:10','2026-08-09 09:51:10'),(3,'rifle','Firearms and weapon listings are prohibited.','2026-08-09 09:51:10','2026-08-09 09:51:10'),(4,'shotgun','Firearms and weapon listings are prohibited.','2026-08-09 09:51:10','2026-08-09 09:51:10'),(5,'ammunition','Ammunition is prohibited.','2026-08-09 09:51:10','2026-08-09 09:51:10'),(6,'explosive','Explosive materials are prohibited.','2026-08-09 09:51:10','2026-08-09 09:51:10'),(7,'bomb','Explosive devices are prohibited.','2026-08-09 09:51:10','2026-08-09 09:51:10'),(8,'grenade','Explosive devices are prohibited.','2026-08-09 09:51:10','2026-08-09 09:51:10'),(9,'illegal drugs','Illegal or controlled drugs are prohibited.','2026-08-09 09:51:10','2026-08-09 09:51:10'),(10,'narcotics','Illegal or controlled drugs are prohibited.','2026-08-09 09:51:10','2026-08-09 09:51:10'),(11,'counterfeit','Counterfeit goods are prohibited.','2026-08-09 09:51:10','2026-08-09 09:51:10'),(12,'fake brand','Counterfeit goods are prohibited.','2026-08-09 09:51:10','2026-08-09 09:51:10'),(13,'stolen goods','Stolen goods are prohibited.','2026-08-09 09:51:10','2026-08-09 09:51:10'),(14,'hazardous chemicals','Hazardous chemicals are prohibited.','2026-08-09 09:51:10','2026-08-09 09:51:10'),(15,'poison','Poisons are prohibited.','2026-08-09 09:51:11','2026-08-09 09:51:11'),(16,'pornographic content','Adult content is prohibited.','2026-08-09 09:51:11','2026-08-09 09:51:11');
+/*!40000 ALTER TABLE `prohibited_items` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `restock_notifications`
+--
+
+DROP TABLE IF EXISTS `restock_notifications`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `restock_notifications` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `customer_id` int(10) unsigned NOT NULL,
+  `product_id` int(10) unsigned NOT NULL,
+  `variant_id` int(10) unsigned DEFAULT NULL,
+  `notified_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_restock_subscription` (`customer_id`,`product_id`,`variant_id`),
+  KEY `fk_restock_product` (`product_id`),
+  KEY `fk_restock_variant` (`variant_id`),
+  CONSTRAINT `fk_restock_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_restock_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_restock_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `restock_notifications`
+--
+
+LOCK TABLES `restock_notifications` WRITE;
+/*!40000 ALTER TABLE `restock_notifications` DISABLE KEYS */;
+/*!40000 ALTER TABLE `restock_notifications` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `return_requests`
+--
+
+DROP TABLE IF EXISTS `return_requests`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `return_requests` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `order_item_id` int(10) unsigned NOT NULL,
+  `customer_id` int(10) unsigned NOT NULL,
+  `reason` varchar(100) NOT NULL,
+  `details` text DEFAULT NULL,
+  `status` enum('requested','approved','rejected','refunded') NOT NULL DEFAULT 'requested',
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_return_per_item` (`order_item_id`),
+  KEY `fk_return_customer` (`customer_id`),
+  CONSTRAINT `fk_return_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_return_order_item` FOREIGN KEY (`order_item_id`) REFERENCES `order_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `return_requests`
+--
+
+LOCK TABLES `return_requests` WRITE;
+/*!40000 ALTER TABLE `return_requests` DISABLE KEYS */;
+/*!40000 ALTER TABLE `return_requests` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `seller_applications`
+--
+
+DROP TABLE IF EXISTS `seller_applications`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `seller_applications` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int(10) unsigned NOT NULL,
+  `application_role` enum('admin','supplier') NOT NULL DEFAULT 'admin',
+  `business_name` varchar(150) NOT NULL,
+  `business_description` text NOT NULL,
+  `phone` varchar(30) NOT NULL,
+  `business_address` varchar(255) NOT NULL,
+  `logo_path` varchar(255) NOT NULL,
+  `document_path` varchar(255) NOT NULL,
+  `selfie_path` varchar(255) DEFAULT NULL,
+  `verification_status` enum('pending_review','verified','rejected') NOT NULL DEFAULT 'pending_review',
+  `review_notes` text DEFAULT NULL,
+  `reviewed_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_id` (`user_id`),
+  CONSTRAINT `fk_seller_applications_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `seller_applications`
+--
+
+LOCK TABLES `seller_applications` WRITE;
+/*!40000 ALTER TABLE `seller_applications` DISABLE KEYS */;
+INSERT INTO `seller_applications` VALUES (1,2,'supplier','arigato','clothing brand','12345678901','anabu imus cavite','','verify_6a78583c5de8f7.65052200.jpg','verify_6a78583c60a565.70923395.jpg','verified',NULL,'2026-08-09 18:38:51','2026-08-09 10:36:44'),(2,3,'admin','mahiwaga','clothing','111234678007','imus cavite','','verify_6a785a49c87ee2.11395016.png','verify_6a785a49ca30e5.57177899.jpg','verified',NULL,'2026-08-09 18:45:50','2026-08-09 10:45:29');
+/*!40000 ALTER TABLE `seller_applications` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `site_content`
+--
+
+DROP TABLE IF EXISTS `site_content`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `site_content` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `type` enum('banner','announcement','site_text') NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `body` text DEFAULT NULL,
+  `image_url` varchar(255) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_site_content_active_type` (`is_active`,`type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `site_content`
+--
+
+LOCK TABLES `site_content` WRITE;
+/*!40000 ALTER TABLE `site_content` DISABLE KEYS */;
+/*!40000 ALTER TABLE `site_content` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `stock_requests`
+--
+
+DROP TABLE IF EXISTS `stock_requests`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `stock_requests` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `seller_id` int(10) unsigned NOT NULL,
+  `supplier_id` int(10) unsigned NOT NULL,
+  `supply_id` int(10) unsigned DEFAULT NULL,
+  `item_name` varchar(255) NOT NULL,
+  `quantity_requested` int(10) unsigned NOT NULL,
+  `note` text DEFAULT NULL,
+  `status` enum('pending','fulfilled','rejected') NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_stock_requests_seller_status` (`seller_id`,`status`),
+  KEY `idx_stock_requests_supplier_status` (`supplier_id`,`status`),
+  KEY `fk_stock_request_supply` (`supply_id`),
+  CONSTRAINT `fk_stock_request_supply` FOREIGN KEY (`supply_id`) REFERENCES `supplier_inventory` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_stock_requests_seller` FOREIGN KEY (`seller_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_stock_requests_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `stock_requests`
+--
+
+LOCK TABLES `stock_requests` WRITE;
+/*!40000 ALTER TABLE `stock_requests` DISABLE KEYS */;
+INSERT INTO `stock_requests` VALUES (1,2,3,NULL,'clothes',20,NULL,'fulfilled','2026-08-09 10:50:32','2026-08-09 10:50:47'),(2,2,3,1,'clothes',46,NULL,'fulfilled','2026-08-11 08:55:26','2026-08-11 08:55:36'),(3,2,3,1,'clothes',20,NULL,'fulfilled','2026-08-11 08:58:16','2026-08-11 08:58:22'),(4,2,3,1,'clothes',20,NULL,'fulfilled','2026-08-11 08:59:35','2026-08-11 08:59:44'),(5,2,3,1,'clothes',20,NULL,'fulfilled','2026-08-11 09:04:28','2026-08-11 09:06:08'),(6,2,3,1,'clothes',20,NULL,'fulfilled','2026-08-11 09:09:36','2026-08-11 09:09:42'),(7,2,3,1,'clothes',20,NULL,'fulfilled','2026-08-11 09:14:35','2026-08-11 09:14:52');
+/*!40000 ALTER TABLE `stock_requests` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `supplier_inventory`
+--
+
+DROP TABLE IF EXISTS `supplier_inventory`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `supplier_inventory` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `supplier_id` int(10) unsigned NOT NULL,
+  `item_name` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `unit` varchar(50) NOT NULL DEFAULT 'piece',
+  `unit_price` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `quantity_available` int(10) unsigned NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_supplier_inventory_available` (`supplier_id`,`is_active`,`quantity_available`),
+  CONSTRAINT `fk_supplier_inventory_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `supplier_inventory`
+--
+
+LOCK TABLES `supplier_inventory` WRITE;
+/*!40000 ALTER TABLE `supplier_inventory` DISABLE KEYS */;
+INSERT INTO `supplier_inventory` VALUES (1,3,'clothes','','piece',200.00,140,1,'2026-08-11 08:54:50','2026-08-11 09:14:52');
+/*!40000 ALTER TABLE `supplier_inventory` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `system_settings`
+--
+
+DROP TABLE IF EXISTS `system_settings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `system_settings` (
+  `id` tinyint(3) unsigned NOT NULL,
+  `commission_rate` decimal(5,2) NOT NULL DEFAULT 0.00,
+  `payment_methods` varchar(255) NOT NULL DEFAULT 'cash,gcash,card,other',
+  `shipping_fee` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `free_shipping_threshold` decimal(10,2) DEFAULT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `system_settings`
+--
+
+LOCK TABLES `system_settings` WRITE;
+/*!40000 ALTER TABLE `system_settings` DISABLE KEYS */;
+INSERT INTO `system_settings` VALUES (1,0.00,'cash,gcash,card,other',0.00,NULL,'2026-08-09 10:13:46');
+/*!40000 ALTER TABLE `system_settings` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `users`
+--
+
+DROP TABLE IF EXISTS `users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `users` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `role` enum('superadmin','admin','supplier','customer') NOT NULL DEFAULT 'customer',
+  `status` enum('pending','approved','suspended','banned') NOT NULL DEFAULT 'approved',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `users`
+--
+
+LOCK TABLES `users` WRITE;
+/*!40000 ALTER TABLE `users` DISABLE KEYS */;
+INSERT INTO `users` VALUES (1,'System Administrator','admin@tinda.local','$2y$12$yfisDez88ZJcS3dTzGUFtux4xIFh.kbdORN2AnkV57hA9kwQ1vs52','superadmin','approved','2026-08-09 10:06:08','2026-08-09 10:06:08'),(2,'Vixen Montiman','montimanvixen420@gmail.com','$2y$12$GMkdRisb2lyO/NQ1N9P.hu0jokSz9ymPOmqN5nA0E4XF6MHaCVeXe','admin','approved','2026-08-09 10:08:29','2026-08-09 10:48:07'),(3,'supplier123','alapanan01@gmail.com','$2y$12$zuux5y21ItbsQrPp5z7Rw./DlPhTjl722yq1eiZA1dXlhsRRWHXkC','supplier','approved','2026-08-09 10:16:06','2026-08-09 10:48:00'),(4,'customer','alapanan02@gmail.com','$2y$12$EoOeHJDaQHDx1VNOrbXcaemTWPC86JDW50oLIM3ZruVjEOVJEYYLG','customer','approved','2026-08-10 09:39:22','2026-08-10 09:39:22');
+/*!40000 ALTER TABLE `users` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `vouchers`
+--
+
+DROP TABLE IF EXISTS `vouchers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `vouchers` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `seller_id` int(10) unsigned NOT NULL,
+  `code` varchar(40) NOT NULL,
+  `discount_type` enum('fixed','percent','free_shipping') NOT NULL,
+  `discount_value` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `minimum_order` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `maximum_discount` decimal(10,2) DEFAULT NULL,
+  `starts_at` datetime DEFAULT NULL,
+  `ends_at` datetime DEFAULT NULL,
+  `usage_limit` int(10) unsigned DEFAULT NULL,
+  `times_used` int(10) unsigned NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_seller_voucher_code` (`seller_id`,`code`),
+  CONSTRAINT `fk_vouchers_seller` FOREIGN KEY (`seller_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `vouchers`
+--
+
+LOCK TABLES `vouchers` WRITE;
+/*!40000 ALTER TABLE `vouchers` DISABLE KEYS */;
+/*!40000 ALTER TABLE `vouchers` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `wishlist_items`
+--
+
+DROP TABLE IF EXISTS `wishlist_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `wishlist_items` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `customer_id` int(10) unsigned NOT NULL,
+  `product_id` int(10) unsigned NOT NULL,
+  `notes` text DEFAULT NULL,
+  `priority` enum('low','medium','high') NOT NULL DEFAULT 'medium',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_customer_product` (`customer_id`,`product_id`),
+  KEY `fk_wishlist_product` (`product_id`),
+  KEY `idx_wishlist_customer` (`customer_id`),
+  CONSTRAINT `fk_wishlist_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_wishlist_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `wishlist_items`
+--
+
+LOCK TABLES `wishlist_items` WRITE;
+/*!40000 ALTER TABLE `wishlist_items` DISABLE KEYS */;
+/*!40000 ALTER TABLE `wishlist_items` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Dumping events for database 'tinda_marketplace'
+--
+
+--
+-- Dumping routines for database 'tinda_marketplace'
+--
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2026-08-14  8:25:00

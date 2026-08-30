@@ -1,0 +1,13 @@
+Options -Indexes
+RewriteEngine On
+
+# Serve real files and folders directly; route all application URLs through index.php.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+RewriteRule ^ index.php [QSA,L]
+
+SetEnv PAYMONGO_SECRET_KEY "sk_test_Mi5uTRgTXQEPW6s1cqxeR7Rn"
+SetEnv APP_URL "http://native-marketplace.test"
+SetEnv PAYMONGO_CA_BUNDLE "C:\xampp\php\extras\ssl\cacert.pem"
