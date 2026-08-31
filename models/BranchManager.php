@@ -102,12 +102,20 @@ class BranchManager
     public function changeBranch(int $managerUserId, int $sellerId, int $branchId): bool
     {
         if (!$this->branchBelongsToSeller($branchId, $sellerId)) return false;
+
+        // Confirm the manager row exists BEFORE updating — rowCount() after an UPDATE only
+        // counts rows that actually changed value, so reassigning back to the SAME branch
+        // (a genuine no-op) would wrongly look like "0 rows affected" and be treated as a failure.
+        $exists = $this->db->prepare('SELECT 1 FROM branch_managers WHERE user_id = :user_id AND seller_id = :seller_id LIMIT 1');
+        $exists->execute(['user_id' => $managerUserId, 'seller_id' => $sellerId]);
+        if (!$exists->fetchColumn()) return false;
+
         $this->db->beginTransaction();
         try {
-            $stmt = $this->db->prepare('UPDATE branch_managers SET branch_id = :branch_id WHERE user_id = :user_id AND seller_id = :seller_id');
-            $stmt->execute(['branch_id' => $branchId, 'user_id' => $managerUserId, 'seller_id' => $sellerId]);
-            if ($stmt->rowCount() !== 1) { $this->db->rollBack(); return false; }
-            $this->db->prepare('UPDATE staff_profiles SET branch_id = :branch_id WHERE user_id = :user_id AND seller_id = :seller_id AND position = "branch_manager"')->execute(['branch_id' => $branchId, 'user_id' => $managerUserId, 'seller_id' => $sellerId]);
+            $this->db->prepare('UPDATE branch_managers SET branch_id = :branch_id WHERE user_id = :user_id AND seller_id = :seller_id')
+                ->execute(['branch_id' => $branchId, 'user_id' => $managerUserId, 'seller_id' => $sellerId]);
+            $this->db->prepare('UPDATE staff_profiles SET branch_id = :branch_id WHERE user_id = :user_id AND seller_id = :seller_id AND position = "branch_manager"')
+                ->execute(['branch_id' => $branchId, 'user_id' => $managerUserId, 'seller_id' => $sellerId]);
             $this->db->commit();
             return true;
         } catch (Throwable $e) { if ($this->db->inTransaction()) $this->db->rollBack(); throw $e; }

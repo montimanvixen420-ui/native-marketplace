@@ -8,8 +8,6 @@ class Order
     private PDO $db;
     private BranchAllocation $allocations;
 
-    // `paymongo` is the hosted gateway option (GCash, cards, and Maya),
-    // and must be accepted when its verified callback creates the order.
     public const PAYMENT_METHODS = ['cash', 'gcash', 'card', 'paymongo', 'other'];
     public const FULFILLMENT_TRANSITIONS = [
         'pending' => ['packed'],
@@ -26,23 +24,6 @@ class Order
         $this->allocations = new BranchAllocation();
     }
 
-    /**
-     * Process a checkout (used by both the seller's POS and the customer's
-     * online checkout) as a single database transaction:
-     * 1. Create the order
-     * 2. Create each order_item (snapshotting product name + price)
-     * 3. Snapshot the chosen size/color and deduct stock from the exact variant
-     *
-     * @param int $sellerId The seller these items belong to (all items in
-     *                       one call must belong to the SAME seller)
-     * @param int|null $customerId Linked registered customer, or null for POS walk-in
-     * @param string|null $customerName Walk-in customer name (used when $customerId is null)
-     * @param array $items Array of ['product_id' => int, 'variant_id' => int|null, 'quantity' => int]
-     * @param string $paymentMethod One of Order::PAYMENT_METHODS
-     * @param string $orderType 'pos' or 'online'
-     * @param string $status Initial status — 'completed' for POS, 'pending' for online
-     * @return array ['success' => bool, 'order_id' => int|null, 'error' => string|null]
-     */
     public function checkout(
         int $sellerId,
         ?int $customerId,
@@ -66,10 +47,6 @@ class Order
             return ['success' => false, 'order_id' => null, 'error' => 'Invalid payment method.'];
         }
 
-        // Defense in depth (spec rules 23/24): never trust a branch id at
-        // face value — confirm it actually belongs to this seller before
-        // attaching it to the order. Silently drop it otherwise rather
-        // than fail the whole checkout.
         if ($branchId !== null) {
             $branchCheck = $this->db->prepare('SELECT 1 FROM branches WHERE id = :id AND seller_id = :seller_id LIMIT 1');
             $branchCheck->execute(['id' => $branchId, 'seller_id' => $sellerId]);
@@ -119,7 +96,6 @@ class Order
                     }
                 }
 
-                // Allocation has already removed branch units from Seller POS.
                 $branchStockRow = null;
                 if ($branchId !== null) {
                     $branchStockStmt = $this->db->prepare(
@@ -167,15 +143,17 @@ class Order
             $discount = min(max(0.0, $discount), $total);
             $total = $total + $shippingFee - $discount;
 
+            // FIX: Added processed_by_user_id column saving
             $stmt = $this->db->prepare(
-                "INSERT INTO orders (seller_id, branch_id, customer_id, customer_name, shipping_address_id, shipping_recipient_name, shipping_phone, shipping_address_text, total_amount, payment_method, order_type, status, created_at)
-                 VALUES (:seller_id, :branch_id, :customer_id, :customer_name, :shipping_address_id, :shipping_recipient_name, :shipping_phone, :shipping_address_text, :total_amount, :payment_method, :order_type, :status, NOW())"
+                "INSERT INTO orders (seller_id, branch_id, customer_id, customer_name, processed_by_user_id, shipping_address_id, shipping_recipient_name, shipping_phone, shipping_address_text, total_amount, payment_method, order_type, status, created_at)
+                 VALUES (:seller_id, :branch_id, :customer_id, :customer_name, :processed_by_user_id, :shipping_address_id, :shipping_recipient_name, :shipping_phone, :shipping_address_text, :total_amount, :payment_method, :order_type, :status, NOW())"
             );
             $stmt->execute([
                 'seller_id' => $sellerId,
                 'branch_id' => $branchId,
                 'customer_id' => $customerId,
                 'customer_name' => $customerId ? null : $customerName,
+                'processed_by_user_id' => $processedByUserId,
                 'shipping_address_id' => $shippingAddress['id'] ?? null,
                 'shipping_recipient_name' => $shippingAddress['recipient_name'] ?? null,
                 'shipping_phone' => $shippingAddress['phone'] ?? null,
@@ -223,8 +201,6 @@ class Order
                 ]);
 
                 if ($branchId !== null) {
-                    // Allocation already moved these units out of Seller POS. A branch
-                    // sale must only reduce this branch's balance.
                     $previousBranchStock = $this->db->prepare(
                         "SELECT stock FROM branch_pos_stock WHERE product_id = :product_id AND variant_size = :size AND variant_color = :color AND branch_id = :branch_id"
                     );
@@ -262,9 +238,29 @@ class Order
         }
     }
 
-    // ── Seller-side queries ──────────────────────────────
+    public function createPosOrder(array $data): array
+    {
+        $sellerStmt = $this->db->prepare('SELECT seller_id FROM branches WHERE id = :id LIMIT 1');
+        $sellerStmt->execute(['id' => $data['branch_id']]);
+        $sellerId = (int) $sellerStmt->fetchColumn();
 
-    /** @param string $branchFilter '' = all branches, 'none' = unassigned, or a numeric branch id */
+        return $this->checkout(
+            $sellerId,
+            $data['customer_id'] ?? null,
+            $data['customer_name'] ?? null,
+            $data['items'] ?? [],
+            $data['payment_method'] ?? 'cash',
+            'pos',
+            'completed',
+            0.0,
+            0.0,
+            null,
+            (int) $data['branch_id'],
+            (int) ($data['processed_by'] ?? 0),
+            'cashier'
+        );
+    }
+
     public function allBySeller(int $sellerId, string $branchFilter = ''): array
     {
         $sql = "SELECT o.*, u.name AS linked_customer_name, b.name AS branch_name
@@ -302,8 +298,6 @@ class Order
         return $order ?: null;
     }
 
-    // ── Branch Manager / Staff queries (spec rules 34-35: scoped to ONE branch only) ──
-
     public function allByBranch(int $branchId): array
     {
         $stmt = $this->db->prepare(
@@ -337,7 +331,6 @@ class Order
         return (int) $stmt->fetchColumn();
     }
 
-    /** Branch Manager dashboard: how many orders came in today for this branch. */
     public function countTodayByBranch(int $branchId): int
     {
         $stmt = $this->db->prepare("SELECT COUNT(*) FROM orders WHERE branch_id = :branch_id AND DATE(created_at) = CURDATE()");
@@ -345,7 +338,6 @@ class Order
         return (int) $stmt->fetchColumn();
     }
 
-    /** Branch Manager dashboard: today's completed sales total for this branch. */
     public function todaysRevenueByBranch(int $branchId): float
     {
         $stmt = $this->db->prepare("SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE branch_id = :branch_id AND DATE(created_at) = CURDATE() AND status != 'cancelled'");
@@ -389,21 +381,12 @@ class Order
         if (!$order) {
             return ['success' => false, 'error' => 'Order not found.'];
         }
-        // Once the customer picks a branch, only that branch's order staff
-        // may process the order. Seller keeps view access but not fulfillment.
         if (!empty($order['branch_id'])) {
             return ['success' => false, 'error' => 'This order was placed for a specific branch. Only that branch\'s order staff can process it.'];
         }
         return $this->applyFulfillmentTransition($order, 'seller_id', $sellerId, $newStatus, $courier);
     }
 
-    /**
-     * Shared status-transition logic for both the Seller's order page and
-     * the branch-scoped Branch Manager / Staff order page. $scopeColumn /
-     * $scopeValue re-checks ownership at the SQL level on the UPDATE too
-     * (not just on the earlier SELECT), so a stale reference can't slip
-     * through a race condition.
-     */
     private function applyFulfillmentTransition(array $order, string $scopeColumn, int $scopeValue, string $newStatus, ?string $courier): array
     {
         $orderId = (int) $order['id'];
@@ -416,8 +399,6 @@ class Order
             return ['success' => false, 'error' => 'Choose a courier before marking this order as packed.'];
         }
 
-        // A packed order receives one tracking number. It is stored on the
-        // order and is deliberately reused when it is shipped and delivered.
         $generatedTracking = null;
         if ($newStatus === 'packed') {
             $generatedTracking = $this->generateTrackingNumber($courier);
@@ -455,7 +436,6 @@ class Order
         return ['success' => true, 'error' => null];
     }
 
-
     private function generateTrackingNumber(string $courier): string
     {
         $normalizedCourier = strtolower(trim($courier));
@@ -470,7 +450,6 @@ class Order
         return $trackingNumber;
     }
 
-    /** Cancel a customer's unprocessed online order and return its stock. */
     public function cancelByCustomer(int $orderId, int $customerId): array
     {
         $this->db->beginTransaction();
@@ -557,7 +536,7 @@ class Order
         return (float) $stmt->fetchColumn();
     }
 
-public function getSalesByBranchesForSeller(int $sellerId, int $days = 30): array
+    public function getSalesByBranchesForSeller(int $sellerId, int $days = 30): array
     {
         $startDate = (new DateTimeImmutable('today'))->modify('-' . $days . ' days')->format('Y-m-d');
         $stmt = $this->db->prepare(
@@ -616,7 +595,6 @@ public function getSalesByBranchesForSeller(int $sellerId, int $days = 30): arra
         return $stmt->fetchAll();
     }
 
-    /** Dashboard trend, restricted to one branch. */
     public function getDailySalesByBranch(int $branchId, int $days = 7): array
     {
         $startDate = (new DateTimeImmutable('today'))->modify('-' . $days . ' days')->format('Y-m-d');
@@ -653,7 +631,6 @@ public function getSalesByBranchesForSeller(int $sellerId, int $days = 30): arra
         return $stmt->fetchAll();
     }
 
-    /** Best sellers, restricted to one branch. */
     public function getTopProductsByBranch(int $branchId, int $limit = 5): array
     {
         $stmt = $this->db->prepare(
@@ -669,8 +646,6 @@ public function getSalesByBranchesForSeller(int $sellerId, int $days = 30): arra
         $stmt->execute();
         return $stmt->fetchAll();
     }
-
-    // ── Customer-side queries ────────────────────────────
 
     public function allByCustomer(int $customerId): array
     {
@@ -707,6 +682,50 @@ public function getSalesByBranchesForSeller(int $sellerId, int $days = 30): arra
         );
         $stmt->execute(['order_id' => $orderId]);
 
+        return $stmt->fetchAll();
+    }
+
+    public function getPlatformSalesSummary(): array
+    {
+        $sql = "SELECT
+                COALESCE(SUM(CASE WHEN status = 'completed' THEN total_amount ELSE 0 END), 0) AS lifetime_revenue,
+                COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0) AS completed_orders,
+                COALESCE(SUM(CASE WHEN status = 'completed' AND created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN total_amount ELSE 0 END), 0) AS revenue_30_days,
+                COALESCE(SUM(CASE WHEN status = 'completed' AND created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END), 0) AS orders_30_days
+             FROM orders";
+        return $this->db->query($sql)->fetch() ?: [];
+    }
+
+    public function getPlatformDailySales(int $days = 14): array
+    {
+        $startDate = (new DateTimeImmutable('today'))->modify('-' . $days . ' days')->format('Y-m-d');
+        $stmt = $this->db->prepare(
+            "SELECT DATE(created_at) AS sale_date, COUNT(*) AS orders, COALESCE(SUM(total_amount), 0) AS revenue
+             FROM orders
+             WHERE status = 'completed' AND created_at >= :start_date
+             GROUP BY DATE(created_at) ORDER BY sale_date ASC"
+        );
+        $stmt->execute(['start_date' => $startDate]);
+        return $stmt->fetchAll();
+    }
+
+    public function getTopSellersByRevenue(int $limit = 5, int $days = 30): array
+    {
+        $startDate = (new DateTimeImmutable('today'))->modify('-' . $days . ' days')->format('Y-m-d');
+        $stmt = $this->db->prepare(
+            "SELECT u.id AS seller_id, u.name AS seller_name,
+                    COALESCE(SUM(o.total_amount), 0) AS revenue,
+                    COUNT(o.id) AS orders
+             FROM orders o
+             INNER JOIN users u ON u.id = o.seller_id
+             WHERE o.status = 'completed' AND o.created_at >= :start_date
+             GROUP BY u.id, u.name
+             ORDER BY revenue DESC
+             LIMIT :limit"
+        );
+        $stmt->bindValue(':start_date', $startDate);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
         return $stmt->fetchAll();
     }
 }

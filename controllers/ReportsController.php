@@ -18,8 +18,21 @@ class ReportsController extends Controller
         $this->reportModel = new Report();
     }
 
-    // GET /superadmin/reports
+    // GET /superadmin/reports — Customer Safety Reports (moderation queue)
     public function index(): void
+    {
+        $this->requireRole('superadmin');
+
+        $this->view('superadmin/reports', [
+            'name' => $_SESSION['user_name'],
+            'customerReports' => $this->reportModel->all(),
+            'reportSummary' => $this->reportModel->summary(),
+            'active' => 'reports',
+        ]);
+    }
+
+    // GET /superadmin/signups — Platform sign-up analytics
+    public function signups(): void
     {
         $this->requireRole('superadmin');
 
@@ -27,15 +40,11 @@ class ReportsController extends Controller
         $range = (int) ($_GET['range'] ?? 6);
         $range = in_array($range, [6, 12], true) ? $range : 6;
 
-        $signups = $this->userModel->getSignupsByMonth($range);
-
-        $this->view('superadmin/reports', [
+        $this->view('superadmin/signups', [
             'name' => $_SESSION['user_name'],
-            'signups' => $signups,
+            'signups' => $this->userModel->getSignupsByMonth($range),
             'range' => $range,
-            'customerReports' => $this->reportModel->all(),
-            'reportSummary' => $this->reportModel->summary(),
-            'active' => 'reports',
+            'active' => 'signups',
         ]);
     }
 

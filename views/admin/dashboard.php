@@ -88,31 +88,27 @@
     <!-- 3. Sales Activity & Inventory Health -->
     <section class="mt-5 grid gap-5 xl:grid-cols-[1.45fr_.8fr]">
       
-      <!-- Chart Activity Panel -->
-      <div class="dashboard-panel flex flex-col justify-between">
-        <div>
-          <div class="flex items-start justify-between border-b border-gray-100 dark:border-white/10 pb-4">
-            <div>
-              <p class="eyebrow">Sales snapshot</p>
-              <h2 class="font-display text-xl font-bold text-ink dark:text-white">Today’s Activity</h2>
-            </div>
-            <span class="rounded-full bg-brand-light dark:bg-brand/20 px-3 py-1 text-xs font-bold text-brand">Live overview</span>
-          </div>
+     <!-- Chart Activity Panel -->
+<div class="dashboard-panel flex flex-col justify-between">
+  <div>
+    <div class="flex items-start justify-between border-b border-gray-100 dark:border-white/10 pb-4">
+      <div>
+        <p class="eyebrow">Sales snapshot</p>
+        <h2 class="font-display text-xl font-bold text-ink dark:text-white">Sales Trend (Last <?= (int) $salesTrendDays ?> Days)</h2>
+      </div>
+      <span class="rounded-full bg-brand-light dark:bg-brand/20 px-3 py-1 text-xs font-bold text-brand">Completed sales</span>
+    </div>
 
-          <!-- Hourly Bar Chart Visual -->
-          <div class="mt-7 flex h-44 items-end gap-2 border-b border-l border-gray-100 dark:border-white/10 px-4 pt-4">
-            <?php foreach ([28,44,35,65,48,78,56,90,72,50,62,42] as $bar): ?>
-              <span class="flex-1 rounded-t bg-brand/<?= $bar === 90 ? '100' : '25' ?> hover:bg-brand transition-colors cursor-pointer" style="height:<?= $bar ?>%"></span>
-            <?php endforeach; ?>
-          </div>
-          <div class="mt-3 flex justify-between text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-            <span>8 AM</span>
-            <span>12 PM</span>
-            <span>4 PM</span>
-            <span>8 PM</span>
-          </div>
-        </div>
-
+    <?php if (empty($dailySales)): ?>
+      <p class="py-10 text-center text-sm text-gray-500">No completed sales in the last <?= (int) $salesTrendDays ?> days.</p>
+    <?php else: ?>
+      <div class="mt-6 relative h-44">
+        <canvas id="adminSalesTrendChart" role="img" aria-label="Line chart of daily completed sales revenue">
+          <?php foreach ($dailySales as $day): ?><?= date('M j', strtotime($day['sale_date'])) ?>: ₱<?= number_format((float) $day['revenue'], 2) ?> (<?= (int) $day['orders'] ?> orders). <?php endforeach; ?>
+        </canvas>
+      </div>
+    <?php endif; ?>
+  </div>
         <!-- Metric Sub-Cards -->
         <div class="mt-6 grid grid-cols-3 gap-3">
           <div class="rounded-xl bg-brand-light dark:bg-brand/10 p-3">
@@ -192,6 +188,59 @@
     </section>
   </main>
 </div>
+<?php if (!empty($dailySales)): ?>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+(function () {
+  var sorted = <?= json_encode(array_reverse($dailySales)) ?>;
+  var labels = sorted.map(function (d) {
+    return new Date(d.sale_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  });
+  var revenue = sorted.map(function (d) { return parseFloat(d.revenue); });
+  var orders = sorted.map(function (d) { return parseInt(d.orders, 10); });
+
+  new Chart(document.getElementById('adminSalesTrendChart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Revenue',
+        data: revenue,
+        borderColor: '#2563EB',
+        backgroundColor: 'rgba(37,99,235,0.08)',
+        fill: true,
+        tension: 0.35,
+        pointRadius: 3,
+        pointBackgroundColor: '#2563EB',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              var i = ctx.dataIndex;
+              return '\u20b1' + ctx.parsed.y.toLocaleString('en-PH', { minimumFractionDigits: 2 }) + '  (' + orders[i] + ' orders)';
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#9CA3AF', font: { size: 11 } } },
+        y: {
+          grid: { color: '#F3F4F6' },
+          ticks: { color: '#9CA3AF', font: { size: 11 }, callback: function (v) { return '\u20b1' + Number(v).toLocaleString('en-PH'); } }
+        }
+      }
+    }
+  });
+})();
+</script>
+<?php endif; ?>
 
 <!-- Lucide Icons -->
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>

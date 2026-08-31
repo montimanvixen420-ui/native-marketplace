@@ -50,7 +50,7 @@ class Branch
     public function allBySeller(int $sellerId): array
     {
         $stmt = $this->db->prepare("SELECT b.*,
-                (SELECT COUNT(*) FROM staff_profiles sp WHERE sp.branch_id = b.id AND sp.is_archived = 0) AS staff_count
+                (SELECT COUNT(*) FROM staff_profiles sp WHERE sp.branch_id = b.id AND sp.position != \"branch_manager\" AND sp.is_archived = 0) AS staff_count
             FROM branches b
             WHERE b.seller_id = :seller_id
             ORDER BY FIELD(b.status,'active','inactive','archived'), b.name");

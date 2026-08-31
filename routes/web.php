@@ -55,6 +55,7 @@ $router->get('/superadmin/applications', ['UserManagementController', 'reviewApp
 
 // ── Superadmin: Reports ─────────────────────────────
 $router->get('/superadmin/reports', ['ReportsController', 'index']);
+$router->get('/superadmin/signups', ['ReportsController', 'signups']);
 
 // ── Superadmin: Content management ─────────────────────────────
 $router->get('/superadmin/content', ['ContentController', 'index']);

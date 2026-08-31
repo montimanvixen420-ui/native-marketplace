@@ -103,7 +103,7 @@ function renderAccountsTable(array $accounts, array $statusStyles, array $seller
         <option value="suspended" <?= $statusFilter === 'suspended' ? 'selected' : '' ?>>Suspended</option>
         <option value="banned" <?= $statusFilter === 'banned' ? 'selected' : '' ?>>Banned</option>
       </select>
-      <button type="submit" class="text-xs font-medium px-4 py-2 rounded-lg bg-ink text-white hover:bg-ink/90">Filter</button>
+   
       <?php if ($statusFilter !== ''): ?>
         <a href="/superadmin/sellers" class="text-xs text-gray-500 hover:underline">Clear</a>
       <?php endif; ?>

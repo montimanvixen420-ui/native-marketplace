@@ -1,117 +1,247 @@
-<div class="flex min-h-screen bg-gray-50">
+<div class="flex min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-200">
 
   <?php require __DIR__ . '/../../partials/admin-sidebar.php'; ?>
 
-  <main class="flex-1 px-8 py-8">
-    <div class="flex items-center justify-between mb-8">
+  <main class="flex-1 px-4 sm:px-8 py-8 overflow-y-auto">
+
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
       <div>
-        <h1 class="font-display font-semibold text-2xl text-gray-900">Orders</h1>
-        <p class="text-sm text-gray-500">Orders for <?= htmlspecialchars($profile['branch_name'] ?? 'your branch') ?> only.</p>
+        <p class="text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">Menu <span class="mx-1">/</span> <span class="text-indigo-600 dark:text-indigo-400 font-semibold">Orders</span></p>
+        <h1 class="font-display font-bold text-2xl text-slate-900 dark:text-white flex items-center gap-2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-6 h-6 text-indigo-600 dark:text-indigo-400"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+          Orders
+        </h1>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Orders for <span class="font-semibold text-slate-700 dark:text-slate-300"><?= htmlspecialchars($profile['branch_name'] ?? 'your branch') ?></span> only.
+        </p>
       </div>
     </div>
 
-    <?php if ($pendingOnlineOrders > 0): ?>
-      <div class="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-        <span class="font-semibold"><?= (int) $pendingOnlineOrders ?></span> online <?= $pendingOnlineOrders === 1 ? 'order needs' : 'orders need' ?> processing.
+    <!-- Alert Banner for Pending Online Orders -->
+    <?php if (!empty($pendingOnlineOrders) && $pendingOnlineOrders > 0): ?>
+      <div class="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 mb-6 flex items-center justify-between text-amber-700 dark:text-amber-400">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-amber-500/20 rounded-xl">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          </div>
+          <span class="text-sm font-semibold"><?= (int)$pendingOnlineOrders ?> online order(s) need processing.</span>
+        </div>
       </div>
     <?php endif; ?>
 
-    <?php if (empty($orders)): ?>
-      <div class="bg-white border border-gray-200 rounded-lg p-12 text-center">
-        <p class="font-display text-lg font-semibold text-gray-900">No orders yet</p>
-        <p class="text-sm text-gray-500 mt-1">Orders placed for this branch will show up here.</p>
+    <!-- Main Container -->
+    <div class="bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 rounded-2xl p-5 shadow-sm backdrop-blur-sm">
+      
+      <!-- Complete DataTables Controls Header -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div></div> <!-- Spacer -->
+
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- Search Box -->
+          <div class="relative min-w-[220px]">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input 
+              type="text" 
+              id="dt-search-input" 
+              oninput="posOrders_updateTable()" 
+              placeholder="Search order or customer..." 
+              class="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors"
+            >
+          </div>
+
+          <!-- Status Dropdown Filter -->
+          <select 
+            id="dt-status-filter" 
+            onchange="posOrders_updateTable()" 
+            class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400"
+          >
+            <option value="">All statuses</option>
+            <option value="completed">Completed</option>
+            <option value="pending">Pending</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+
+          <!-- Page Entries Selector -->
+          <div class="flex items-center gap-2">
+            <select 
+              id="dt-per-page" 
+              onchange="posOrders_updateTable(true)" 
+              class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400"
+            >
+              <option value="5" selected>5</option>
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+            <span class="text-xs text-slate-500 dark:text-slate-400">entries per page</span>
+          </div>
+        </div>
       </div>
-    <?php else: ?>
-      <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <table id="ordersTable" class="w-full text-sm">
-          <thead>
-            <tr class="text-left text-xs uppercase tracking-wide text-gray-500 border-b border-gray-200">
-              <th class="px-5 py-3 font-semibold">Order</th>
-              <th class="px-3 py-3 font-semibold">Customer</th>
-              <th class="px-3 py-3 font-semibold">Payment</th>
-              <th class="px-3 py-3 font-semibold text-right">Total</th>
-              <th class="px-3 py-3 font-semibold">Status</th>
-              <th class="px-3 py-3 font-semibold">Date</th>
-              <th class="px-5 py-3 font-semibold text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php
-              $statusStyles = [
-                  'completed' => 'bg-teal-light text-teal',
-                  'pending' => 'bg-amber/15 text-amber-700',
-                  'packed' => 'bg-blue-50 text-blue-700',
-                  'shipped' => 'bg-indigo-50 text-indigo-700',
-                  'cancelled' => 'bg-gray-100 text-gray-500',
-                  'refunded' => 'bg-red-100 text-red-600',
-              ];
-            ?>
-            <?php foreach ($orders as $order): ?>
-              <tr class="border-b border-gray-100 last:border-0">
-                <td class="px-5 py-3.5 font-medium text-gray-900">#<?= (int) $order['id'] ?></td>
-                <td class="px-3 py-3.5 text-gray-700">
-                  <?= htmlspecialchars($order['linked_customer_name'] ?? $order['customer_name'] ?? 'Walk-in') ?>
-                </td>
-                <td class="px-3 py-3.5 text-gray-500"><?= htmlspecialchars(ucfirst($order['payment_method'])) ?></td>
-                <td class="px-3 py-3.5 text-right font-medium text-gray-900">₱<?= number_format((float) $order['total_amount'], 2) ?></td>
-                <td class="px-3 py-3.5">
-                  <span class="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full <?= $statusStyles[$order['status']] ?? 'bg-gray-100 text-gray-500' ?>">
-                    <?= htmlspecialchars(ucfirst($order['status'])) ?>
-                  </span>
-                </td>
-                <td class="px-3 py-3.5 text-gray-500" data-order="<?= strtotime($order['created_at']) ?>"><?= date('M j, Y g:ia', strtotime($order['created_at'])) ?></td>
-                <td class="px-5 py-3.5 text-right">
-                  <a href="/staff/orders/<?= (int) $order['id'] ?>" class="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">
-                    <i data-lucide="eye" class="w-3.5 h-3.5"></i> View
-                  </a>
-                </td>
+
+      <?php if (empty($orders)): ?>
+        <div class="text-center py-16">
+          <div class="w-16 h-16 bg-slate-100 dark:bg-slate-700/50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-400 dark:text-slate-500">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-8 h-8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          </div>
+          <h3 class="font-bold text-slate-700 dark:text-slate-200 text-base mb-1">No orders yet</h3>
+          <p class="text-slate-500 dark:text-slate-400 text-xs">Orders placed for this branch will show up here.</p>
+        </div>
+      <?php else: ?>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm border-collapse" id="dt-orders-table">
+            <thead>
+              <tr class="border-b border-slate-200 dark:border-slate-700/80 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">
+                <th class="py-3.5 px-4">Order</th>
+                <th class="py-3.5 px-4">Customer</th>
+                <th class="py-3.5 px-4">Payment</th>
+                <th class="py-3.5 px-4">Total</th>
+                <th class="py-3.5 px-4">Status</th>
+                <th class="py-3.5 px-4">Date</th>
+                <th class="py-3.5 px-4 text-right">Actions</th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
-    <?php endif; ?>
-  </main>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
+              <?php foreach ($orders as $order): ?>
+                <tr 
+                  class="order-row hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors"
+                  data-search="<?= htmlspecialchars(strtolower(($order['id'] ?? '') . ' ' . ($order['linked_customer_name'] ?? $order['customer_name'] ?? 'walk-in customer'))) ?>"
+                  data-status="<?= htmlspecialchars(strtolower($order['status'])) ?>"
+                >
+                  <td class="py-4 px-4 font-bold text-indigo-600 dark:text-indigo-400">
+                    #<?= $order['id'] ?>
+                  </td>
+                  <td class="py-4 px-4 font-medium text-slate-800 dark:text-slate-200">
+                    <?= htmlspecialchars($order['linked_customer_name'] ?? $order['customer_name'] ?? 'Walk-in customer') ?>
+                  </td>
+                  <td class="py-4 px-4 text-xs font-semibold capitalize text-slate-600 dark:text-slate-400">
+                    <?= htmlspecialchars($order['payment_method']) ?>
+                  </td>
+                  <td class="py-4 px-4 font-bold text-slate-900 dark:text-white">
+                    ₱<?= number_format((float)$order['total_amount'], 2) ?>
+                  </td>
+                  <td class="py-4 px-4">
+                    <?php 
+                      $st = strtolower($order['status']);
+                      $badgeStyle = 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300';
+                      if ($st === 'completed') $badgeStyle = 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/20';
+                      if ($st === 'pending') $badgeStyle = 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-500/20';
+                      if ($st === 'cancelled') $badgeStyle = 'bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 border border-rose-500/20';
+                    ?>
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold capitalize <?= $badgeStyle ?>">
+                      <?= htmlspecialchars($order['status']) ?>
+                    </span>
+                  </td>
+                  <td class="py-4 px-4 text-xs text-slate-500 dark:text-slate-400">
+                    <?= date('M d, Y g:ia', strtotime($order['created_at'])) ?>
+                  </td>
+                  <td class="py-4 px-4 text-right">
+                    <a 
+                      href="/staff/orders/<?= $order['id'] ?>" 
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-200 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 transition-all shadow-sm"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      View
+                    </a>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
 
+        <!-- DataTables Footer & Pagination -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 mt-2 border-t border-slate-100 dark:border-slate-700/60">
+          <div id="dt-info" class="text-xs font-medium text-slate-500 dark:text-slate-400">
+            Showing 0 to 0 of 0 entries
+          </div>
+          <div id="dt-pagination" class="flex items-center gap-1"></div>
+        </div>
+      <?php endif; ?>
+
+    </div>
+
+  </main>
 </div>
 
-<!-- DataTables (Tailwind styling) -->
-<link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.tailwindcss.css">
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/2.1.8/js/dataTables.tailwindcss.js"></script>
-
-<!-- SweetAlert2 -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<!-- Lucide icons -->
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-
 <script>
-$(document).ready(function () {
-    <?php if (!empty($orders)): ?>
-    $('#ordersTable').DataTable({
-        searching: false,
-        paging: true,
-        pageLength: 5,
-        lengthMenu: [5, 10, 15, 20],
-        lengthChange: true,
-        order: [[5, 'desc']],
-        columnDefs: [
-            { orderable: false, targets: 6 }
-        ],
-        layout: {
-            topStart: null,
-            topEnd: 'pageLength',
-            bottomStart: 'info',
-            bottomEnd: 'paging'
-        },
-        drawCallback: function () {
-            lucide.createIcons();
-        }
-    });
-    <?php endif; ?>
+let currentPage = 1;
 
-    lucide.createIcons();
-});
+function posOrders_updateTable(resetPage = false) {
+  if (resetPage) currentPage = 1;
+
+  const searchValue = (document.getElementById('dt-search-input')?.value || '').toLowerCase().trim();
+  const statusValue = (document.getElementById('dt-status-filter')?.value || '').toLowerCase();
+  const perPage = parseInt(document.getElementById('dt-per-page')?.value || '10');
+
+  const rows = Array.from(document.querySelectorAll('#dt-orders-table tbody .order-row'));
+  
+  // Filter matching rows
+  const matchingRows = rows.filter(row => {
+    const matchesSearch = !searchValue || row.dataset.search.includes(searchValue);
+    const matchesStatus = !statusValue || row.dataset.status === statusValue;
+    return matchesSearch && matchesStatus;
+  });
+
+  const totalEntries = matchingRows.length;
+  const totalPages = Math.ceil(totalEntries / perPage) || 1;
+
+  if (currentPage > totalPages) currentPage = totalPages;
+
+  const startIndex = (currentPage - 1) * perPage;
+  const endIndex = startIndex + perPage;
+
+  // Hide all rows first
+  rows.forEach(r => r.style.display = 'none');
+
+  // Show only paginated matching rows
+  matchingRows.slice(startIndex, endIndex).forEach(r => r.style.display = '');
+
+  // Update Footer Info text
+  const infoEl = document.getElementById('dt-info');
+  if (infoEl) {
+    if (totalEntries === 0) {
+      infoEl.textContent = 'Showing 0 to 0 of 0 entries';
+    } else {
+      const displayStart = startIndex + 1;
+      const displayEnd = Math.min(endIndex, totalEntries);
+      infoEl.textContent = `Showing ${displayStart} to ${displayEnd} of ${totalEntries} entries`;
+    }
+  }
+
+  // Render Pagination Buttons
+  const pagEl = document.getElementById('dt-pagination');
+  if (pagEl) {
+    pagEl.innerHTML = '';
+    
+    // Previous Button
+    const prevBtn = document.createElement('button');
+    prevBtn.className = `px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors ${currentPage === 1 ? 'opacity-40 cursor-not-allowed text-slate-400' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'}`;
+    prevBtn.textContent = '«';
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; posOrders_updateTable(); } };
+    pagEl.appendChild(prevBtn);
+
+    // Page Number Buttons
+    for (let p = 1; p <= totalPages; p++) {
+      const pageBtn = document.createElement('button');
+      const isActive = p === currentPage;
+      pageBtn.className = `px-3 py-1 text-xs font-bold rounded-lg transition-colors ${isActive ? 'bg-indigo-600 text-white dark:bg-indigo-500' : 'border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'}`;
+      pageBtn.textContent = p;
+      pageBtn.onclick = () => { currentPage = p; posOrders_updateTable(); };
+      pagEl.appendChild(pageBtn);
+    }
+
+    // Next Button
+    const nextBtn = document.createElement('button');
+    nextBtn.className = `px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors ${currentPage === totalPages || totalEntries === 0 ? 'opacity-40 cursor-not-allowed text-slate-400' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'}`;
+    nextBtn.textContent = '»';
+    nextBtn.disabled = currentPage === totalPages || totalEntries === 0;
+    nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; posOrders_updateTable(); } };
+    pagEl.appendChild(nextBtn);
+  }
+}
+
+// Initial DataTables setup on page load
+document.addEventListener('DOMContentLoaded', () => posOrders_updateTable(true));
 </script>

@@ -4,10 +4,17 @@
   <main class="flex-1 px-8 py-8">
     
     <!-- Page Header -->
-    <header class="mb-6">
-      <p class="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 mb-1">Trust &amp; safety</p>
-      <h1 class="font-display font-semibold text-2xl text-gray-900 dark:text-white">Reports against your store</h1>
-      <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Reports filed by customers against your account or your products. Our moderation team reviews and resolves these — this list is for your awareness only.</p>
+    <header class="mb-6 flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 mb-1">Trust &amp; safety</p>
+        <h1 class="font-display font-semibold text-2xl text-gray-900 dark:text-white">Reports against your store</h1>
+        <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Reports filed by customers against your account or your products. Our moderation team reviews and resolves these — this list is for your awareness only.</p>
+      </div>
+      <?php if ($openCount > 0): ?>
+        <span class="shrink-0 rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 px-3 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-300"><?= $openCount ?> open</span>
+      <?php else: ?>
+        <span class="shrink-0 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">0 open</span>
+      <?php endif; ?>
     </header>
 
     <!-- View Only Warning Notice -->
@@ -38,6 +45,14 @@
             <i data-lucide="search" class="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2"></i>
             <input type="text" id="customSearchInput" placeholder="Search report reason, item..." class="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500">
           </div>
+
+          <select id="statusFilterReports" class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm rounded-lg px-2 py-1.5 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500">
+            <option value="">All statuses</option>
+            <option value="open">Open</option>
+            <option value="reviewing">Reviewing</option>
+            <option value="resolved">Resolved</option>
+            <option value="dismissed">Dismissed</option>
+          </select>
 
           <div class="flex items-center gap-2 shrink-0">
             <select id="customEntriesSelect" class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-sm rounded-lg px-2 py-1.5 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500">
@@ -72,7 +87,7 @@
             ?>
             <?php foreach($reports as $report): ?>
               <?php $statusClass = $statusStyles[$report['status']] ?? $statusStyles['dismissed']; ?>
-              <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/50 transition-colors">
+              <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/50 transition-colors" data-status="<?= htmlspecialchars($report['status']) ?>">
                 <td class="px-4 py-4 align-top text-gray-700 dark:text-gray-300 font-medium">
                   <?= htmlspecialchars(ucfirst($report['target_type'])) ?>
                 </td>
@@ -138,6 +153,17 @@ $(function () {
   $('#customEntriesSelect').on('change', function () {
     table.page.len(this.value).draw();
   });
+
+  // Status filter (Fix #6)
+  $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+    if (settings.nTable.id !== 'sellerReportsTable') return true;
+    const status = $('#statusFilterReports').val();
+    if (status === '') return true;
+    const row = table.row(dataIndex).node();
+    return $(row).data('status') === status;
+  });
+
+  $('#statusFilterReports').on('change', function () { table.draw(); });
   <?php endif; ?>
 
   if (typeof lucide !== 'undefined') lucide.createIcons();

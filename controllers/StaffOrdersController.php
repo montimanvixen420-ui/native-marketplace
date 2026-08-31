@@ -6,13 +6,6 @@ require_once __DIR__ . '/../core/OrderNotificationMailer.php';
 
 /**
  * Branch Manager + Staff Orders (staff.txt sections 34-35).
- *
- * A separate controller from AdminOrdersController rather than reusing
- * /admin/orders. Branch Managers (role=manager) and Staff (role=staff)
- * are each tied to exactly ONE branch_id via staff_profiles -- so a
- * single branch-scoped query set serves both. Every query here is
- * scoped to that one branch at the database level (Order::allByBranch /
- * findByIdForBranch), never just hidden in the UI.
  */
 class StaffOrdersController extends Controller
 {
@@ -68,9 +61,6 @@ class StaffOrdersController extends Controller
         $profile = $this->requireActiveStaff();
         $branchId = (int) $profile['branch_id'];
 
-        // Only Order Staff may process orders. Branch Managers and other
-        // positions (cashier, inventory staff, customer service) can view
-        // branch orders but not change their fulfillment status.
         if ($profile['position'] !== 'order_staff') {
             $this->redirect('/staff/orders/' . $id . '?error=' . urlencode('Only order staff can process orders. You have view-only access.'));
             return;
@@ -83,6 +73,7 @@ class StaffOrdersController extends Controller
             trim($_POST['courier'] ?? ''),
             trim($_POST['tracking_number'] ?? '')
         );
+
         if ($result['success']) (new OrderNotificationMailer())->sendStatus($id, $_POST['status'] ?? '', $this->orderModel);
 
         $url = '/staff/orders/' . $id;

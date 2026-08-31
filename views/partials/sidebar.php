@@ -24,8 +24,10 @@
           ['label' => 'Menu', 'items' => [
               ['key' => 'overview', 'href' => '/superadmin/dashboard', 'label' => 'Overview',
                'icon' => '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>'],
-              ['key' => 'reports', 'href' => '/superadmin/reports', 'label' => 'Reports',
+              ['key' => 'signups', 'href' => '/superadmin/signups', 'label' => 'Platform Sign-ups',
                'icon' => '<path d="M3 3v18h18"/><path d="M7 15l4-6 3 4 4-7"/>'],
+              ['key' => 'reports', 'href' => '/superadmin/reports', 'label' => 'Customer Reports',
+               'icon' => '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>'],
           ]],
           ['label' => 'Management', 'items' => [
               ['key' => 'users', 'href' => '/superadmin/users', 'label' => 'Users',

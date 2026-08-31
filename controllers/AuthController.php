@@ -4,6 +4,7 @@ require_once __DIR__ . '/../core/Controller.php';
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../models/ProhibitedItem.php';
 require_once __DIR__ . '/../models/SellerApplication.php';
+require_once __DIR__ . '/../models/BranchManager.php';
 require_once __DIR__ . '/../core/Mailer.php';
 
 class AuthController extends Controller
@@ -241,8 +242,16 @@ class AuthController extends Controller
             default => null,
         };
 
-        if ($statusError !== null) {
+               if ($statusError !== null) {
             $this->view('auth/login', ['error' => $statusError]);
+            return;
+        }
+
+        // Branch Managers have a second, role-specific status (active/inactive/archived) on
+        // top of their main account status — check it here too, so a deactivated manager
+        // sees a clear message on the login page instead of reaching their dashboard first.
+        if ($user['role'] === User::ROLE_MANAGER && !(new BranchManager())->forUser((int) $user['id'])) {
+            $this->view('auth/login', ['error' => 'Your Branch Manager access has been deactivated. Please contact your seller/admin.']);
             return;
         }
 

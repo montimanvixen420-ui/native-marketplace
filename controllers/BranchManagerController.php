@@ -8,10 +8,19 @@ class BranchManagerController extends Controller
     private BranchManager $managers;
     private Branch $branches;
     public function __construct() { if (session_status() === PHP_SESSION_NONE) session_start(); $this->managers = new BranchManager(); $this->branches = new Branch(); }
+       
     public function index(): void
     {
         $this->requireApprovedSeller(); $sellerId=(int)$_SESSION['user_id'];
-        $this->view('admin/branch-managers/index',['name'=>$_SESSION['user_name'],'managers'=>$this->managers->allBySeller($sellerId),'branches'=>$this->branches->allBySeller($sellerId),'active'=>'branch-managers']);
+        $branches = $this->branches->allBySeller($sellerId);
+        $managers = $this->managers->allBySeller($sellerId);
+
+        // Fix #4: how many of this seller's ACTIVE branches have no manager (active or inactive) assigned?
+        $managedBranchIds = array_column(array_filter($managers, fn($m) => $m['status'] !== 'archived'), 'branch_id');
+        $activeBranches = array_filter($branches, fn($b) => $b['is_active']);
+        $unmanagedCount = count(array_diff(array_column($activeBranches, 'id'), $managedBranchIds));
+
+        $this->view('admin/branch-managers/index',['name'=>$_SESSION['user_name'],'managers'=>$managers,'branches'=>$branches,'unmanagedCount'=>$unmanagedCount,'totalActiveBranches'=>count($activeBranches),'active'=>'branch-managers']);
     }
     public function store(): void
     {

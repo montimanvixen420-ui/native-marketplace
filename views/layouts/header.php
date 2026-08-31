@@ -189,6 +189,9 @@
       html.dark .icon-btn { border-color: rgba(255,255,255,.15); color: #d1d5db; }
       html.dark .icon-btn:hover { background: rgba(255,255,255,.06); }
       html.dark .swal2-popup { background: #1f2937 !important; color: #f9fafb !important; }
+      html.dark .swal2-select,
+      html.dark .swal2-input,
+      html.dark .swal2-textarea { background:#111827 !important; color:#f9fafb !important; border-color:rgba(255,255,255,.2) !important; color-scheme: dark; }
       html.dark .swal2-title,
       html.dark .swal2-html-container { color: #f9fafb !important; }
       html.dark .swal2-timer-progress-bar { background: rgba(255,255,255,.35); }

@@ -232,12 +232,27 @@ function posApp_applyFilters() {
   sorted.forEach(card => grid.appendChild(card));
 }
 
+function posApp_showStockLimitToast(productName, stock) {
+  Swal.fire({
+    toast: true,
+    position: 'top-end',
+    icon: 'warning',
+    title: `Only ${stock} left in stock — ${productName}`,
+    showConfirmButton: false,
+    timer: 2000,
+    timerProgressBar: true
+  });
+}
+
 function posApp_addToCart(product) {
   const existing = posCart.find(item => item.id === product.id);
 
   if (existing) {
     if (existing.quantity < product.stock) {
       existing.quantity += 1;
+    } else {
+      posApp_showStockLimitToast(product.name, product.stock);
+      return;
     }
   } else {
     posCart.push({ ...product, quantity: 1 });
@@ -249,6 +264,11 @@ function posApp_addToCart(product) {
 function posApp_changeQty(productId, delta) {
   const item = posCart.find(i => i.id === productId);
   if (!item) return;
+
+  if (delta > 0 && item.quantity >= item.stock) {
+    posApp_showStockLimitToast(item.name, item.stock);
+    return;
+  }
 
   item.quantity += delta;
 

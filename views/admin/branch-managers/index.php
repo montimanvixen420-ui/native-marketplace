@@ -23,6 +23,16 @@
       </button>
     </header>
 
+    <?php if ($unmanagedCount > 0): ?>
+      <div class="mb-6 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/40 p-4 text-sm text-amber-900 dark:text-amber-200 flex items-start gap-3 shadow-xs">
+        <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5"></i>
+        <div>
+          <p class="font-bold text-amber-950 dark:text-amber-100"><?= $unmanagedCount ?> of <?= $totalActiveBranches ?> active branches have no manager assigned</p>
+          <p class="mt-0.5 text-xs text-amber-800/90 dark:text-amber-300/80">Use "Add Branch Manager" above to assign someone to those branches.</p>
+        </div>
+      </div>
+    <?php endif; ?>
+
     <!-- Table Card Panel -->
     <section class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden p-4 shadow-sm">
       
@@ -95,11 +105,6 @@
                           data-email="<?= htmlspecialchars($manager['email']) ?>" data-phone="<?= htmlspecialchars($manager['phone'] ?? '') ?>">
                     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
                   </button>
-                  <?php if ($manager['status'] !== 'archived'): ?>
-                    <button type="button" class="p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition js-change" title="Change Branch" data-id="<?= (int) $manager['user_id'] ?>" data-name="<?= htmlspecialchars($manager['name']) ?>">
-                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/><path d="M8 16H3v5"/></svg>
-                    </button>
-                  <?php endif; ?>
                   <?php if ($manager['status'] === 'active'): ?>
                     <button type="button" class="p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition js-status" title="Deactivate" data-id="<?= (int) $manager['user_id'] ?>" data-status="inactive" data-name="<?= htmlspecialchars($manager['name']) ?>">
                       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="10" y1="9" x2="10" y2="15"/><line x1="14" y1="9" x2="14" y2="15"/></svg>
@@ -109,14 +114,11 @@
                       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
                     </button>
                   <?php endif; ?>
-                  <button type="button" class="p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition js-reset-pw" title="Reset Password" data-id="<?= (int) $manager['user_id'] ?>">
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                  <!-- Fix #3: Change Branch / Reset Password / Restore / Archive now live in a shared "more actions" menu, opened via this trigger -->
+                  <button type="button" class="js-row-menu p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition" title="More actions"
+                          data-id="<?= (int) $manager['user_id'] ?>" data-name="<?= htmlspecialchars($manager['name']) ?>" data-archived="<?= $manager['status'] === 'archived' ? '1' : '0' ?>">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
                   </button>
-                  <?php if ($manager['status'] !== 'archived'): ?>
-                    <button type="button" class="p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 transition js-archive" title="Archive" data-id="<?= (int) $manager['user_id'] ?>" data-name="<?= htmlspecialchars($manager['name']) ?>">
-                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-                    </button>
-                  <?php endif; ?>
                 </div>
               </td>
             </tr>
@@ -182,6 +184,27 @@
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Date Created</dt><dd id="viewCreated" class="text-gray-600 dark:text-gray-300"></dd></div>
     </dl>
   </div>
+</div>
+
+<!-- Shared "more actions" dropdown — repositioned + repopulated per row on open, appended to <body> so it can never be clipped by the table card's overflow-hidden -->
+<div id="rowActionsMenu" class="hidden fixed z-50 w-48 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg py-1.5 text-sm">
+  <button type="button" id="menuChangeBranch" class="js-change w-full flex items-center gap-2 px-3 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/><path d="M8 16H3v5"/></svg>
+    Change Branch
+  </button>
+  <button type="button" id="menuResetPw" class="js-reset-pw w-full flex items-center gap-2 px-3 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+    Reset Password
+  </button>
+  <button type="button" id="menuRestore" class="js-restore w-full flex items-center gap-2 px-3 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/><path d="M8 16H3v5"/></svg>
+    Restore
+  </button>
+  <div class="my-1 border-t border-gray-100 dark:border-slate-700"></div>
+  <button type="button" id="menuArchive" class="js-archive w-full flex items-center gap-2 px-3 py-2 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+    Archive
+  </button>
 </div>
 
 <!-- DataTables Scripts -->
@@ -314,11 +337,14 @@ $(function () {
     Swal.fire({
       title: 'Change Branch', text: `Assign ${this.dataset.name} to a different branch.`,
       input: 'select',
-      inputOptions: { <?php foreach ($branches as $branch): if ($branch['is_active']): ?>'<?= (int) $branch['id'] ?>':'<?= htmlspecialchars(addslashes($branch['name'])) ?>',<?php endif; endforeach; ?> },
+      inputValue: '',
+      inputOptions: { '': 'Select branch', <?php foreach ($branches as $branch): if ($branch['is_active']): ?>'b<?= (int) $branch['id'] ?>':'<?= htmlspecialchars(addslashes($branch['name'])) ?>',<?php endif; endforeach; ?> },
+      inputValidator: (value) => !value ? 'Please select a branch.' : undefined,
       showCancelButton: true, confirmButtonText: 'Save', confirmButtonColor: '#059669',
     }).then(function (result) {
       if (!result.isConfirmed) return;
-      $.post(`/admin/branch-managers/${id}/branch`, { branch_id: result.value })
+      const branchId = result.value.replace(/^b/, '');
+      $.post(`/admin/branch-managers/${id}/branch`, { branch_id: branchId })
         .done(res => { toast(res.success, res.message); if (res.success) setTimeout(() => location.reload(), 900); })
         .fail(x => toast(false, x.responseJSON?.message || 'Unable to update assignment.'));
     });
@@ -335,6 +361,42 @@ $(function () {
     }).then(function (result) {
       if (!result.isConfirmed) return;
       $.post(`/admin/branch-managers/${id}/status`, { status: status })
+        .done(res => { toast(res.success, res.message); if (res.success) setTimeout(() => location.reload(), 900); })
+        .fail(() => toast(false, 'Something went wrong. Please try again.'));
+    });
+  });
+
+  // ── Shared "more actions" menu (Fix #3) ─────
+  $(document).on('click', '.js-row-menu', function (e) {
+    e.stopPropagation();
+    const btn = this;
+    const id = btn.dataset.id, name = btn.dataset.name, archived = btn.dataset.archived === '1';
+    const $menu = $('#rowActionsMenu');
+
+    $('#menuChangeBranch').attr('data-id', id).attr('data-name', name).toggle(!archived);
+    $('#menuResetPw').attr('data-id', id).toggle(!archived);
+    $('#menuRestore').attr('data-id', id).attr('data-name', name).toggle(archived);
+    $('#menuArchive').attr('data-id', id).attr('data-name', name).toggle(!archived);
+
+    const rect = btn.getBoundingClientRect();
+    $menu
+      .css({ top: (rect.bottom + 4) + 'px', left: Math.max(8, rect.right - 192) + 'px' })
+      .removeClass('hidden');
+  });
+
+  $(document).on('click', function () { $('#rowActionsMenu').addClass('hidden'); });
+
+  // ── Restore (Fix #1) ─────
+  $(document).on('click', '.js-restore', function () {
+    const id = this.dataset.id, name = this.dataset.name;
+    Swal.fire({
+      title: 'Restore this Branch Manager?',
+      text: `${name}'s account will be restored as Inactive. Activate it afterward to let them log in again.`,
+      icon: 'question', showCancelButton: true,
+      confirmButtonText: 'Yes, restore', cancelButtonText: 'Cancel', confirmButtonColor: '#059669',
+    }).then(function (result) {
+      if (!result.isConfirmed) return;
+      $.post(`/admin/branch-managers/${id}/status`, { status: 'inactive' })
         .done(res => { toast(res.success, res.message); if (res.success) setTimeout(() => location.reload(), 900); })
         .fail(() => toast(false, 'Something went wrong. Please try again.'));
     });

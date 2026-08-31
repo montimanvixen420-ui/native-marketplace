@@ -12,35 +12,40 @@
 
     <!-- Search & filters -->
     <form method="GET" action="/superadmin/users" class="flex items-center gap-3 mb-5">
-      <input
-        type="text"
-        name="search"
-        value="<?= htmlspecialchars($filters['search']) ?>"
-        placeholder="Search by name or email…"
-        class="flex-1 max-w-xs text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-teal"
-      >
+  <input
+    type="text"
+    name="search"
+    value="<?= htmlspecialchars($filters['search']) ?>"
+    placeholder="Search by name or email…"
+    class="flex-1 max-w-xs text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-teal"
+  >
 
-      <select name="role" onchange="this.form.submit()" class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-teal">
-        <option value="">All roles</option>
-        <option value="superadmin" <?= $filters['role'] === 'superadmin' ? 'selected' : '' ?>>Superadmin</option>
-        <option value="admin" <?= $filters['role'] === 'admin' ? 'selected' : '' ?>>Owner (seller)</option>
-        <option value="supplier" <?= $filters['role'] === 'supplier' ? 'selected' : '' ?>>Supplier</option>
-        <option value="customer" <?= $filters['role'] === 'customer' ? 'selected' : '' ?>>Customer</option>
-      </select>
+  <select name="role" onchange="this.form.submit()" class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-teal">
+    <option value="">All roles</option>
+    <option value="superadmin" <?= $filters['role'] === 'superadmin' ? 'selected' : '' ?>>Superadmin</option>
+    <option value="admin" <?= $filters['role'] === 'admin' ? 'selected' : '' ?>>Owner (seller)</option>
+    <option value="supplier" <?= $filters['role'] === 'supplier' ? 'selected' : '' ?>>Supplier</option>
+    <option value="customer" <?= $filters['role'] === 'customer' ? 'selected' : '' ?>>Customer</option>
+  </select>
 
-      <select name="status" onchange="this.form.submit()" class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-teal">
-        <option value="">All statuses</option>
-        <option value="pending" <?= $filters['status'] === 'pending' ? 'selected' : '' ?>>Pending</option>
-        <option value="approved" <?= $filters['status'] === 'approved' ? 'selected' : '' ?>>Approved</option>
-        <option value="suspended" <?= $filters['status'] === 'suspended' ? 'selected' : '' ?>>Suspended</option>
-        <option value="banned" <?= $filters['status'] === 'banned' ? 'selected' : '' ?>>Banned</option>
-      </select>
+  <select name="status" onchange="this.form.submit()" class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-teal">
+    <option value="">All statuses</option>
+    <option value="pending" <?= $filters['status'] === 'pending' ? 'selected' : '' ?>>Pending</option>
+    <option value="approved" <?= $filters['status'] === 'approved' ? 'selected' : '' ?>>Approved</option>
+    <option value="suspended" <?= $filters['status'] === 'suspended' ? 'selected' : '' ?>>Suspended</option>
+    <option value="banned" <?= $filters['status'] === 'banned' ? 'selected' : '' ?>>Banned</option>
+  </select>
 
-      <button type="submit" class="text-xs font-medium px-4 py-2 rounded-lg bg-ink text-white hover:bg-ink/90">Filter</button>
-      <?php if ($filters['search'] !== '' || $filters['role'] !== '' || $filters['status'] !== ''): ?>
-        <a href="/superadmin/users" class="text-xs text-gray-500 hover:underline">Clear</a>
-      <?php endif; ?>
-    </form>
+  <div class="flex items-center gap-2 ml-auto">
+    <select id="usersPageLength" class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-teal">
+      <option value="5">5</option>
+      <option value="10">10</option>
+      <option value="25">25</option>
+      <option value="50">50</option>
+    </select>
+    <span class="text-sm text-gray-500">entries per page</span>
+  </div>
+</form>
 
     <!-- Users table -->
     <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -55,6 +60,7 @@
             <th class="px-5 py-3 font-medium text-right">Actions</th>
           </tr>
         </thead>
+        
         <tbody class="divide-y divide-gray-100">
           <?php if (empty($users)): ?>
             <tr>
@@ -150,28 +156,28 @@
 <script>
 $(document).ready(function () {
     <?php if (!empty($users)): ?>
-    $('#usersTable').DataTable({
+    var table = $('#usersTable').DataTable({
         searching: true,
         paging: true,
         pageLength: 5,
         lengthMenu: [5, 10, 25, 50],
-        lengthChange: true,
         order: [[4, 'desc']],
         columnDefs: [
-            { orderable: false, targets: 5 } // "Actions" column - walang sort
+            { orderable: false, targets: 5 }
         ],
-        layout: { topStart: 'pageLength', topEnd: 'search', bottomStart: 'info', bottomEnd: 'paging' },
+        layout: { topStart: null, topEnd: 'search', bottomStart: 'info', bottomEnd: 'paging' },
         drawCallback: function () {
-            // I-render ulit ang icons kapag nagbago ang page (paging/sorting)
             lucide.createIcons();
         }
     });
+
+    $('#usersPageLength').on('change', function () {
+        table.page.len(parseInt(this.value, 10)).draw();
+    });
     <?php endif; ?>
 
-    // Unang render ng lahat ng <i data-lucide="..."> sa page
     lucide.createIcons();
 
-    // SweetAlert2 confirmation para sa Approve / Reject / Suspend / Reactivate / Delete
     $(document).on('submit', '.js-confirm-form', function (e) {
         e.preventDefault();
         const form = this;

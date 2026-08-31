@@ -84,4 +84,18 @@ class Staff
             ORDER BY s.name, b.name, u.name';
         return $this->db->query($sql)->fetchAll();
     }
+    public function allForBranchOverview(int $branchId, int $sellerId): array
+{
+    $s = $this->db->prepare(
+        'SELECT sp.first_name, sp.last_name, sp.phone, sp.position, sp.status
+         FROM staff_profiles sp
+         WHERE sp.branch_id = :branch_id
+           AND sp.seller_id = :seller_id
+           AND sp.is_archived = 0
+           AND sp.position != "branch_manager"
+         ORDER BY sp.status, sp.last_name, sp.first_name'
+    );
+    $s->execute(['branch_id' => $branchId, 'seller_id' => $sellerId]);
+    return $s->fetchAll();
+}
 }

@@ -30,8 +30,10 @@
           ['label' => 'Menu', 'items' => [
               ['key' => 'overview', 'href' => '/superadmin/dashboard', 'label' => 'Overview',
                'icon' => '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>'],
-              ['key' => 'reports', 'href' => '/superadmin/reports', 'label' => 'Reports',
+              ['key' => 'signups', 'href' => '/superadmin/signups', 'label' => 'Platform Sign-ups',
                'icon' => '<path d="M3 3v18h18"/><path d="M7 15l4-6 3 4 4-7"/>'],
+              ['key' => 'reports', 'href' => '/superadmin/reports', 'label' => 'Customer Reports',
+               'icon' => '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>'],
           ]],
           ['label' => 'Management', 'items' => [
               ['key' => 'users', 'href' => '/superadmin/users', 'label' => 'Users',
@@ -69,7 +71,7 @@
           ]],
           ['label' => 'Inventory', 'items' => [
               ['key' => 'inventory', 'href' => '/admin/inventory', 'label' => 'Seller inventory',
-               'icon' => '<path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/>'],
+               'icon' => '<path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-4.4a2 2 0 0 1 1.48 0l8 4.4A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><rect x="6" y="10" width="12" height="1"/>'],
               ['key' => 'products', 'href' => '/products', 'label' => 'Products',
                'icon' => '<path d="M20 7l-8-4-8 4v10l8 4 8-4V7z"/><path d="M4 7l8 4 8-4"/><path d="M12 11v10"/>'],
               ['key' => 'allocations', 'href' => '/admin/allocations', 'label' => 'Branch allocations',
@@ -86,10 +88,10 @@
                'icon' => '<circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 014-4h6a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M22 21v-2a4 4 0 00-3-3.87"/>'],
           ]],
           ['label' => 'Others', 'items' => [
-              ['key' => 'reports', 'href' => '/admin/reports', 'label' => 'Reports',
+              ['key' => 'reports', 'href' => '/admin/reports', 'label' => 'Complaints Against Store',
                'icon' => '<path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>'],
               ['key' => 'settings', 'href' => '/admin/settings', 'label' => 'Settings',
-               'icon' => '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>'],
+               'icon' => '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06-.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>'],
           ]],
       ],
       'supplier' => [
@@ -137,8 +139,8 @@
               ['key' => 'stock', 'href' => '/manager/stock', 'label' => 'Stock', 'only' => 'inventory_staff',
                'icon' => '<path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05"/><path d="M12 22.08V12"/>'],
               ['key' => 'inventory', 'href' => '/manager/inventory', 'label' => 'Branch Inventory', 'only' => 'inventory_staff',
-               'icon' => '<path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/>'],
-              ['key' => 'reports', 'href' => '/staff/reports', 'label' => 'Reports',
+               'icon' => '<rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>'],
+              ['key' => 'reports', 'href' => '/staff/reports', 'label' => 'Branch Product Reports',
                'icon' => '<path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>'],
           ]],
       ],
@@ -155,7 +157,7 @@
               ['key' => 'products', 'href' => '/manager/products', 'label' => 'Branch POS Products',
                'icon' => '<path d="M20 7l-8-4-8 4v10l8 4 8-4V7z"/><path d="M4 7l8 4 8-4"/><path d="M12 11v10"/>'],
               ['key' => 'inventory', 'href' => '/manager/inventory', 'label' => 'Branch Inventory',
-               'icon' => '<path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/>'],
+               'icon' => '<rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>'],
               ['key' => 'damaged-items', 'href' => '/manager/damaged-items', 'label' => 'Damaged Items',
                'icon' => '<path d="M12 2v6"/><path d="M12 16v6"/><path d="M4.93 4.93l4.24 4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="M2 12h6"/><path d="M16 12h6"/>'],
           ]],
@@ -164,7 +166,7 @@
                'icon' => '<circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 014-4h6a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M22 21v-2a4 4 0 00-3-3.87"/>'],
           ]],
           ['label' => 'Others', 'items' => [
-              ['key' => 'reports', 'href' => '/staff/reports', 'label' => 'Reports',
+              ['key' => 'reports', 'href' => '/staff/reports', 'label' => 'Branch Product Reports',
                'icon' => '<path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>'],
           ]],
       ],
@@ -222,6 +224,7 @@
 
 <!-- Dinagdagan ng [scrollbar-width:none] at [&::-webkit-scrollbar]:hidden para siguradong tago ang scrollbar sa browser -->
 <aside class="app-sidebar hidden md:flex min-h-screen sticky top-0 h-screen flex-col justify-between shrink-0 transition-colors [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <!-- Top & Scrollable Nav Section -->
     <div class="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <!-- Binuwasan ang py-6 to py-4 -->
       <div class="app-brand flex items-center gap-3 font-display font-extrabold text-xl px-6 py-4">
@@ -235,24 +238,26 @@
       </div>
 
       <nav class="px-4 space-y-0.5 mt-2">
-  <?php foreach ($__sidebarGroups as $__sidebarGroup): ?>
-    <?php foreach ($__sidebarGroup['items'] as $__sidebarNavItem): ?>
-      <?php 
-        // Direct URL priority match
-        $__urlMatches = ($__sidebarNavItem['href'] === '/') 
-          ? ($__currentUri === '/') 
-          : str_starts_with($__currentUri, $__sidebarNavItem['href']);
+        <?php foreach ($__sidebarGroups as $__sidebarGroup): ?>
+          <?php foreach ($__sidebarGroup['items'] as $__sidebarNavItem): ?>
+            <?php 
+              // Direct URL priority match
+              $__urlMatches = ($__sidebarNavItem['href'] === '/') 
+                ? ($__currentUri === '/') 
+                : str_starts_with($__currentUri, $__sidebarNavItem['href']);
 
-        $__isItemActive = $__urlMatches || (!empty($__sidebarActive) && $__sidebarActive === $__sidebarNavItem['key']);
-      ?>
-      <a href="<?= htmlspecialchars($__sidebarNavItem['href']) ?>" class="<?= $__isItemActive ? $__sidebarNavActive : $__sidebarNavInactive ?>">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4 shrink-0"><?= $__sidebarNavItem['icon'] ?></svg>
-        <?= $__sidebarNavItem['label'] ?>
-      </a>
-    <?php endforeach; ?>
-  <?php endforeach; ?>
-</nav>
+              $__isItemActive = $__urlMatches || (!empty($__sidebarActive) && $__sidebarActive === $__sidebarNavItem['key']);
+            ?>
+            <a href="<?= htmlspecialchars($__sidebarNavItem['href']) ?>" class="<?= $__isItemActive ? $__sidebarNavActive : $__sidebarNavInactive ?>">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4 shrink-0"><?= $__sidebarNavItem['icon'] ?></svg>
+              <?= $__sidebarNavItem['label'] ?>
+            </a>
+          <?php endforeach; ?>
+        <?php endforeach; ?>
+      </nav>
+    </div><!-- End of flex-1 scrollable container -->
 
+    <!-- Pinned Bottom Section (Profile, Links, & Footer) -->
     <div class="shrink-0">
       <?php if ($__sidebarRole !== 'staff'): ?>
       <div class="app-footer-rule px-4 pt-2 pb-1 space-y-0.5 border-t">
@@ -289,7 +294,7 @@
         <p class="text-[9px] text-gray-300 dark:text-white/20 text-center mt-1.5">© <?= date('Y') ?> TINDA Marketplace</p>
       </div>
     </div>
-  </aside>
+</aside>
 
 <script>
 (function () {

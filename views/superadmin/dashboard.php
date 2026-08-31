@@ -68,6 +68,74 @@
       </a>
     </section>
 
+    <!-- Platform Revenue -->
+    <section class="dashboard-panel mt-5 p-6">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 dark:border-white/10 pb-4">
+        <div>
+          <p class="eyebrow">Platform revenue</p>
+          <h2 class="font-display text-xl font-bold text-ink dark:text-white">Gross Merchandise Value</h2>
+        </div>
+        <span class="rounded-full bg-brand-light dark:bg-brand/20 px-3 py-1 text-xs font-bold text-brand">Completed orders, all sellers</span>
+      </div>
+
+      <div class="mt-5 grid gap-4 sm:grid-cols-3">
+        <div class="dashboard-stat">
+          <div class="flex items-center gap-2">
+            <i data-lucide="wallet" class="h-4 w-4 text-brand"></i>
+            <span class="stat-label">Lifetime GMV</span>
+          </div>
+          <b>&#8369;<?= number_format((float) $salesSummary['lifetime_revenue'], 2) ?></b>
+          <small><?= (int) $salesSummary['completed_orders'] ?> completed orders</small>
+        </div>
+        <div class="dashboard-stat">
+          <div class="flex items-center gap-2">
+            <i data-lucide="trending-up" class="h-4 w-4 text-brand"></i>
+            <span class="stat-label">GMV (last 30 days)</span>
+          </div>
+          <b>&#8369;<?= number_format((float) $salesSummary['revenue_30_days'], 2) ?></b>
+          <small><?= (int) $salesSummary['orders_30_days'] ?> orders</small>
+        </div>
+        <div class="dashboard-stat">
+          <div class="flex items-center gap-2">
+            <i data-lucide="calculator" class="h-4 w-4 text-brand"></i>
+            <span class="stat-label">Avg. order value (30d)</span>
+          </div>
+          <b>&#8369;<?= (int) $salesSummary['orders_30_days'] > 0 ? number_format((float) $salesSummary['revenue_30_days'] / (int) $salesSummary['orders_30_days'], 2) : '0.00' ?></b>
+          <small>Per completed order</small>
+        </div>
+      </div>
+
+      <?php if (empty($dailySales)): ?>
+        <p class="mt-6 py-8 text-center text-sm text-gray-500 dark:text-white/50">No completed orders in the last 14 days yet.</p>
+      <?php else: ?>
+        <div class="mt-6 relative h-52">
+          <canvas id="platformRevenueChart" role="img" aria-label="Line chart of daily platform-wide completed sales revenue">
+            <?php foreach ($dailySales as $day): ?><?= date('M j', strtotime($day['sale_date'])) ?>: &#8369;<?= number_format((float) $day['revenue'], 2) ?> (<?= (int) $day['orders'] ?> orders). <?php endforeach; ?>
+          </canvas>
+        </div>
+      <?php endif; ?>
+
+      <?php if (!empty($topSellers)): ?>
+        <div class="mt-7 border-t border-gray-100 dark:border-white/10 pt-5">
+          <p class="mb-3 text-sm font-semibold text-ink dark:text-white">Top sellers (last 30 days)</p>
+          <div class="divide-y divide-gray-100 dark:divide-white/10">
+            <?php foreach ($topSellers as $i => $seller): ?>
+              <div class="flex items-center justify-between py-2.5 text-sm">
+                <div class="flex items-center gap-2.5">
+                  <span class="flex h-6 w-6 items-center justify-center rounded-full bg-brand-light dark:bg-brand/20 text-xs font-bold text-brand"><?= $i + 1 ?></span>
+                  <span class="font-medium text-ink dark:text-white"><?= htmlspecialchars($seller['seller_name']) ?></span>
+                </div>
+                <div class="text-right">
+                  <p class="font-semibold text-ink dark:text-white">&#8369;<?= number_format((float) $seller['revenue'], 2) ?></p>
+                  <p class="text-xs text-gray-500 dark:text-white/50"><?= (int) $seller['orders'] ?> orders</p>
+                </div>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        </div>
+      <?php endif; ?>
+    </section>
+
     <section class="dashboard-panel mt-5 overflow-hidden p-0">
       <div class="flex items-center justify-between border-b border-gray-100 px-6 py-5 dark:border-white/10">
         <div>
@@ -227,3 +295,57 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 </script>
+
+<?php if (!empty($dailySales)): ?>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+(function () {
+  var daily = <?= json_encode($dailySales) ?>;
+  var labels = daily.map(function (d) {
+    return new Date(d.sale_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  });
+  var revenue = daily.map(function (d) { return parseFloat(d.revenue); });
+  var orders = daily.map(function (d) { return parseInt(d.orders, 10); });
+
+  new Chart(document.getElementById('platformRevenueChart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Platform revenue',
+        data: revenue,
+        borderColor: '#2563EB',
+        backgroundColor: 'rgba(37,99,235,0.08)',
+        fill: true,
+        tension: 0.35,
+        pointRadius: 3,
+        pointBackgroundColor: '#2563EB',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              var i = ctx.dataIndex;
+              return '\u20b1' + ctx.parsed.y.toLocaleString('en-PH', { minimumFractionDigits: 2 }) + '  (' + orders[i] + ' orders)';
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#9CA3AF', font: { size: 11 } } },
+        y: {
+          grid: { color: '#F3F4F6' },
+          ticks: { color: '#9CA3AF', font: { size: 11 }, callback: function (v) { return '\u20b1' + Number(v).toLocaleString('en-PH'); } }
+        }
+      }
+    }
+  });
+})();
+</script>
+<?php endif; ?>

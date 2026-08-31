@@ -25,12 +25,16 @@ class SellerReportsController extends Controller
         $this->reportModel = new Report();
     }
 
-    // GET /admin/reports
+        // GET /admin/reports
     public function index(): void
     {
+        $reports = $this->reportModel->allBySeller((int) $_SESSION['user_id']);
+        $openCount = count(array_filter($reports, fn($r) => $r['status'] === 'open'));
+
         $this->view('admin/reports/index', [
             'name' => $_SESSION['user_name'],
-            'reports' => $this->reportModel->allBySeller((int) $_SESSION['user_id']),
+            'reports' => $reports,
+            'openCount' => $openCount,
             'active' => 'reports',
         ]);
     }
