@@ -4,26 +4,28 @@ class Database
 {
     private static ?PDO $instance = null;
 
-    // ── I-edit ito base sa setup mo sa XAMPP ──
-    private static string $host = '127.0.0.1';
-    private static string $port = '3306';
-    private static string $dbname = 'tinda_marketplace'; // palitan ng pangalan ng database mo
-    private static string $username = 'root';
-    private static string $password = ''; // default blank sa XAMPP
-
     public static function getConnection(): PDO
     {
         if (self::$instance === null) {
-            $dsn = "mysql:host=" . self::$host . ";port=" . self::$port . ";dbname=" . self::$dbname . ";charset=utf8mb4";
+            $host = getenv('DB_HOST') ?: 'mysql-249e0f00-native-marketplace.d.aivencloud.com';
+            $port = getenv('DB_PORT') ?: '16857';
+            $dbname = getenv('DB_NAME') ?: 'defaultdb';
+            $username = getenv('DB_USER') ?: 'avnadmin';
+            $password = getenv('DB_PASS') ?: '';
+
+            $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4";
 
             try {
-                self::$instance = new PDO($dsn, self::$username, self::$password, [
+                $options = [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                     PDO::ATTR_EMULATE_PREPARES => false,
-                ]);
+                    PDO::MYSQL_ATTR_SSL_CA => true,
+                ];
+
+                self::$instance = new PDO($dsn, $username, $password, $options);
             } catch (PDOException $e) {
-                die("Hindi maka-connect sa database: " . $e->getMessage());
+                die("Database Connection Error: " . $e->getMessage());
             }
         }
 
