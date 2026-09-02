@@ -9,8 +9,28 @@
         <p class="text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">Menu <span class="mx-1">/</span> <span class="text-indigo-600 dark:text-indigo-400 font-semibold">Orders</span></p>
         <h1 class="font-display font-bold text-2xl text-slate-900 dark:text-white">Orders</h1>
         <p class="text-sm text-slate-500 dark:text-slate-400">
-          Orders for <span class="font-semibold text-slate-700 dark:text-slate-300"><?= htmlspecialchars($profile['branch_name'] ?? 'your branch') ?></span> only.
+          <?php if ($branchFilter === 'none'): ?>
+            Showing orders from <span class="font-semibold text-slate-700 dark:text-slate-300">your own Point of Sale Orders</span> (no branch attached).
+          <?php elseif ($branchFilter === ''): ?>
+            Showing orders from <span class="font-semibold text-slate-700 dark:text-slate-300">all branches</span>, plus your own POS Orders.
+          <?php else: ?>
+            <?php
+              $selectedBranchName = 'the selected branch';
+              foreach ($branches as $b) { if ((string) $b['id'] === $branchFilter) { $selectedBranchName = $b['name']; break; } }
+            ?>
+            Showing orders for <span class="font-semibold text-slate-700 dark:text-slate-300"><?= htmlspecialchars($selectedBranchName) ?></span> only.
+          <?php endif; ?>
         </p>
+      </div>
+      <div>
+        <label for="orderBranchFilter" class="sr-only">Filter by branch</label>
+        <select id="orderBranchFilter" onchange="location.href = '/admin/orders' + (this.value !== '' ? '?branch=' + encodeURIComponent(this.value) : '?branch=')" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="none" <?= $branchFilter === 'none' ? 'selected' : '' ?>>My POS  Orders</option>
+          <option value="" <?= $branchFilter === '' ? 'selected' : '' ?>>All branches</option>
+          <?php foreach ($branches as $branch): ?>
+            <option value="<?= (int) $branch['id'] ?>" <?= $branchFilter === (string) $branch['id'] ? 'selected' : '' ?>><?= htmlspecialchars($branch['name']) ?></option>
+          <?php endforeach; ?>
+        </select>
       </div>
     </div>
 
@@ -25,7 +45,7 @@
     <?php if (empty($orders)): ?>
       <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-12 text-center shadow-sm">
         <p class="font-display text-lg font-semibold text-slate-900 dark:text-white">No orders yet</p>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Orders placed for this branch will show up here.</p>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Orders placed here will show up in this list.</p>
       </div>
     <?php else: ?>
       <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden p-5 shadow-sm">
@@ -98,7 +118,7 @@
                 </td>
                 <td class="px-3 py-3.5 text-slate-500 dark:text-slate-400 whitespace-nowrap"><?= date('M j, Y g:ia', strtotime($order['created_at'])) ?></td>
                 <td class="px-5 py-3.5 text-right">
-                  <a href="/staff/orders/<?= (int) $order['id'] ?>" class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm">
+                  <a href="/admin/orders/<?= (int) $order['id'] ?>" class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm">
                     <i data-lucide="eye" class="w-3.5 h-3.5"></i> View
                   </a>
                 </td>

@@ -20,7 +20,7 @@ class ManagerProductsController extends Controller {
     if($variants)$data['stock']=array_sum(array_column($variants,'stock'));
     if($data['stock']>(int)$source['stock']){$this->renderCreate($p,$_POST,'Product stock cannot exceed the selected Branch Inventory stock ('.(int)$source['stock'].').');return;}
     $upload=$this->uploadImage();if(isset($upload['error'])){$this->renderCreate($p,$_POST,$upload['error']);return;}
-    $data['stock_request_id']=null;$data['inventory_source_product_id']=$sourceId;$data['image_url']=$upload['path'];
+    $data['stock_request_id']=null;$data['inventory_source_product_id']=$sourceId;$data['inventory_source_variant_size']=$size;$data['inventory_source_variant_color']=$color;$data['image_url']=$upload['path'];
     $listingId=$this->products->create((int)$p['seller_id'],$data);$this->variants->replaceForProduct($listingId,$variants);
     $result=$this->pos->createListingFromInventory((int)$p['branch_id'],$sourceId,$size,$color,$listingId,(int)$data['stock'],$variants,(int)$_SESSION['user_id']);
     if(!$result['success']){$this->products->delete($listingId,(int)$p['seller_id']);$this->renderCreate($p,$_POST,$result['error']);return;}$this->redirect('/manager/products?success='.urlencode('New Branch POS product created from Branch Inventory.'));

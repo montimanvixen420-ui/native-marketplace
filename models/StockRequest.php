@@ -81,6 +81,62 @@ class StockRequest
         return $stmt->fetch() ?: null;
     }
 
+    /**
+     * Turns a fulfilled-but-not-yet-received request into Seller Inventory: adds the
+     * quantity to a matching raw inventory product (same name, not a POS/branch
+     * listing) if one exists, or creates a new one. Marks the request received so
+     * this can't be double-counted.
+     */
+    public function receiveForSeller(int $requestId, int $sellerId): array
+    {
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT id, item_name, quantity_requested FROM stock_requests
+                 WHERE id = :id AND seller_id = :seller_id AND status = 'fulfilled' AND received_at IS NULL
+                 FOR UPDATE"
+            );
+            $stmt->execute(['id' => $requestId, 'seller_id' => $sellerId]);
+            $request = $stmt->fetch();
+            if (!$request) {
+                $this->db->rollBack();
+                return ['success' => false, 'error' => 'This request is not available to receive.'];
+            }
+
+            $qty = (int) $request['quantity_requested'];
+
+            $existing = $this->db->prepare(
+                "SELECT id FROM products
+                 WHERE seller_id = :seller_id AND LOWER(name) = LOWER(:name)
+                   AND inventory_source_product_id IS NULL
+                   AND id NOT IN (SELECT product_id FROM product_branches)
+                   AND status <> 'archived'
+                 LIMIT 1 FOR UPDATE"
+            );
+            $existing->execute(['seller_id' => $sellerId, 'name' => $request['item_name']]);
+            $productId = $existing->fetchColumn();
+
+            if ($productId) {
+                $this->db->prepare(
+                    "UPDATE products SET stock = stock + :qty, stock_request_id = :request_id WHERE id = :id"
+                )->execute(['qty' => $qty, 'request_id' => $requestId, 'id' => (int) $productId]);
+            } else {
+                $this->db->prepare(
+                    "INSERT INTO products (seller_id, stock_request_id, name, price, stock, status)
+                     VALUES (:seller_id, :request_id, :name, 0, :qty, 'active')"
+                )->execute(['seller_id' => $sellerId, 'request_id' => $requestId, 'name' => $request['item_name'], 'qty' => $qty]);
+            }
+
+            $this->db->prepare("UPDATE stock_requests SET received_at = NOW() WHERE id = :id")->execute(['id' => $requestId]);
+            $this->db->commit();
+            return ['success' => true];
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            error_log('StockRequest receive failed (id ' . $requestId . '): ' . $e->getMessage());
+            return ['success' => false, 'error' => 'Unable to receive this stock right now.'];
+        }
+    }
+
     /** A seller's fulfilled delivery, including one already linked to its product. */
     public function findFulfilledForSeller(int $requestId, int $sellerId): ?array
     {

@@ -13,6 +13,13 @@
       </a>
     </div>
 
+    <?php if (!empty($error)): ?>
+      <p class="mb-4 rounded border border-red-200 bg-red-50 dark:bg-red-950/40 dark:border-red-800 p-3 text-sm text-red-700 dark:text-red-300"><?= htmlspecialchars($error) ?></p>
+    <?php endif; ?>
+    <?php if (!empty($success)): ?>
+      <p class="mb-4 rounded border border-green-200 bg-green-50 dark:bg-green-950/40 dark:border-green-800 p-3 text-sm text-green-700 dark:text-green-300"><?= htmlspecialchars($success) ?></p>
+    <?php endif; ?>
+
     <?php if (empty($requests)): ?>
       <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-12 text-center shadow-sm">
         <p class="font-display text-lg font-semibold text-gray-900 dark:text-white">No stock requests yet</p>
@@ -56,6 +63,7 @@
               <th class="px-4 py-3.5 font-semibold text-right">Qty Requested</th>
               <th class="px-4 py-3.5 font-semibold text-center">Status</th>
               <th class="px-5 py-3.5 font-semibold">Requested Date</th>
+              <th class="px-5 py-3.5 font-semibold text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
@@ -92,6 +100,27 @@
                 <td class="px-5 py-4 text-gray-500 dark:text-gray-400 whitespace-nowrap">
                   <?= date('M j, Y', strtotime($req['created_at'])) ?>
                 </td>
+                <td class="px-5 py-4 text-right whitespace-nowrap">
+                  <?php if ($status === 'fulfilled' && empty($req['received_at'])): ?>
+                    <form method="POST" action="/stock-requests/receive" class="js-confirm-form inline"
+                      data-title="Receive this stock?"
+                      data-text="This adds <?= (int) $req['quantity_requested'] ?> pcs of &quot;<?= htmlspecialchars($req['item_name'], ENT_QUOTES) ?>&quot; to your Seller Inventory."
+                      data-icon="question"
+                      data-confirm-text="Yes, receive"
+                      data-confirm-color="#059669">
+                      <input type="hidden" name="id" value="<?= (int) $req['id'] ?>">
+                      <button type="submit" class="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg text-white shadow-sm transition-all" style="background-color: #059669;">
+                        <i data-lucide="package-check" class="w-3.5 h-3.5"></i> Receive
+                      </button>
+                    </form>
+                  <?php elseif (!empty($req['received_at'])): ?>
+                    <span class="inline-flex items-center gap-1 text-xs font-medium text-gray-400 dark:text-gray-500">
+                      <i data-lucide="check" class="w-3.5 h-3.5"></i> Received <?= date('M j', strtotime($req['received_at'])) ?>
+                    </span>
+                  <?php else: ?>
+                    <span class="text-xs text-gray-300 dark:text-gray-600">—</span>
+                  <?php endif; ?>
+                </td>
               </tr>
             <?php endforeach; ?>
           </tbody>
@@ -118,6 +147,9 @@ $(document).ready(function () {
         lengthChange: false,
         searching: true,
         order: [[4, 'desc']], // Default sort by Requested Date
+        columnDefs: [
+            { orderable: false, targets: 5 }
+        ],
         layout: {
             topStart: null,
             topEnd: null,

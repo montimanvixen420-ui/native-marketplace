@@ -14,8 +14,33 @@ class Product
 
     public function allBySeller(int $sellerId): array
     {
+        // Exclude Branch POS listings: those are created by a Branch Manager from
+        // Branch Inventory (see BranchPosStock::createListingFromInventory) under
+        // this same seller_id, but are only ever registered in product_branches —
+        // the Seller's own "Add product" flow never touches that table. They have
+        // their own dedicated management page (Branch Manager > Branch POS Products).
+        // Archived (soft-deleted) products are excluded too — see archivedBySeller().
         $stmt = $this->db->prepare(
-            "SELECT * FROM products WHERE seller_id = :seller_id ORDER BY created_at DESC"
+            "SELECT * FROM products
+             WHERE seller_id = :seller_id
+               AND status <> 'archived'
+               AND id NOT IN (SELECT product_id FROM product_branches)
+             ORDER BY created_at DESC"
+        );
+        $stmt->execute(['seller_id' => $sellerId]);
+
+        return $stmt->fetchAll();
+    }
+
+    /** Products the seller has archived (soft-deleted) — viewable but not editable/sellable. */
+    public function archivedBySeller(int $sellerId): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT * FROM products
+             WHERE seller_id = :seller_id
+               AND status = 'archived'
+               AND id NOT IN (SELECT product_id FROM product_branches)
+             ORDER BY updated_at DESC"
         );
         $stmt->execute(['seller_id' => $sellerId]);
 
@@ -73,6 +98,8 @@ class Product
     {
         $fields = ['seller_id', 'stock_request_id'];
         if ($this->hasColumn('inventory_source_product_id')) $fields[] = 'inventory_source_product_id';
+        if ($this->hasColumn('inventory_source_variant_size')) $fields[] = 'inventory_source_variant_size';
+        if ($this->hasColumn('inventory_source_variant_color')) $fields[] = 'inventory_source_variant_color';
         $fields = array_merge($fields, ['name', 'description']);
         if ($this->hasColumn('size_guide')) $fields[] = 'size_guide';
         if ($this->hasColumn('fit_information')) $fields[] = 'fit_information';
@@ -83,6 +110,8 @@ class Product
             'seller_id' => $sellerId,
             'stock_request_id' => $data['stock_request_id'] ?? null,
             'inventory_source_product_id' => $data['inventory_source_product_id'] ?? null,
+            'inventory_source_variant_size' => $data['inventory_source_variant_size'] ?? null,
+            'inventory_source_variant_color' => $data['inventory_source_variant_color'] ?? null,
             'name' => $data['name'],
             'description' => $data['description'],
             'size_guide' => $data['size_guide'] ?? '', 'fit_information' => $data['fit_information'] ?? '',
@@ -208,11 +237,26 @@ class Product
 
     public function delete(int $id, int $sellerId): bool
     {
+        // Soft delete: products are often referenced by historical records (orders,
+        // inventory transfers, allocations, damage reports) that must be preserved,
+        // and a real DELETE is blocked by foreign key constraints anyway in that case.
+        // Archive it instead — it disappears from the active catalog/storefront but
+        // stays visible under the "Archived" tab, and can be restored later.
         $stmt = $this->db->prepare(
-            "DELETE FROM products WHERE id = :id AND seller_id = :seller_id"
+            "UPDATE products SET status = 'archived' WHERE id = :id AND seller_id = :seller_id"
         );
 
-        return $stmt->execute(['id' => $id, 'seller_id' => $sellerId]);
+        return $stmt->execute(['id' => $id, 'seller_id' => $sellerId]) && $stmt->rowCount() > 0;
+    }
+
+    /** Brings an archived product back to 'active' so it can be edited/sold again. */
+    public function restore(int $id, int $sellerId): bool
+    {
+        $stmt = $this->db->prepare(
+            "UPDATE products SET status = 'active' WHERE id = :id AND seller_id = :seller_id AND status = 'archived'"
+        );
+
+        return $stmt->execute(['id' => $id, 'seller_id' => $sellerId]) && $stmt->rowCount() > 0;
     }
 
     public function countBySeller(int $sellerId): int
@@ -244,7 +288,9 @@ class Product
                 COALESCE(SUM(CASE WHEN (CASE WHEN pv.id IS NULL THEN p.stock ELSE pv.stock END) = 0 THEN 1 ELSE 0 END), 0) AS out_of_stock_count
              FROM products p
              LEFT JOIN product_variants pv ON pv.product_id = p.id
-             WHERE p.seller_id = :seller_id"
+             WHERE p.seller_id = :seller_id
+               AND p.status <> 'archived'
+               AND p.id NOT IN (SELECT product_id FROM product_branches)"
         );
         $stmt->execute(['seller_id' => $sellerId, 'threshold' => $lowStockThreshold]);
         return $stmt->fetch() ?: ['product_count' => 0, 'total_units' => 0, 'low_stock_count' => 0, 'out_of_stock_count' => 0];
@@ -258,6 +304,8 @@ class Product
              FROM products p
              LEFT JOIN product_variants pv ON pv.product_id = p.id
              WHERE p.seller_id = :seller_id
+               AND p.status <> 'archived'
+               AND p.id NOT IN (SELECT product_id FROM product_branches)
                AND (CASE WHEN pv.id IS NULL THEN p.stock ELSE pv.stock END) <= :threshold
              ORDER BY stock ASC, p.name ASC"
         );
@@ -380,6 +428,23 @@ class Product
         $stmt = $this->db->prepare(
             "SELECT DISTINCT category FROM products
              WHERE seller_id = :seller_id AND status = 'active' AND stock > 0 AND category IS NOT NULL
+             ORDER BY category ASC"
+        );
+        $stmt->execute(['seller_id' => $sellerId]);
+
+        return array_column($stmt->fetchAll(), 'category');
+    }
+
+    /**
+     * Distinct list of ALL of a seller's categories (any status/stock), for the
+     * "My products" management page filter pills — so a newly-typed category
+     * shows up in the filter as soon as any product uses it.
+     */
+    public function distinctCategoriesForSeller(int $sellerId): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT DISTINCT category FROM products
+             WHERE seller_id = :seller_id AND category IS NOT NULL AND category <> ''
              ORDER BY category ASC"
         );
         $stmt->execute(['seller_id' => $sellerId]);

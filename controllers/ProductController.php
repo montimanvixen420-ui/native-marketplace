@@ -46,8 +46,19 @@ class ProductController extends Controller
 
     public function index(): void
     {
-        $products = $this->productModel->allBySeller($this->sellerId());
-        $this->view('admin/products/index', ['products' => $products, 'active' => 'products']);
+        $view = ($_GET['view'] ?? '') === 'archived' ? 'archived' : 'active';
+        $products = $view === 'archived'
+            ? $this->productModel->archivedBySeller($this->sellerId())
+            : $this->productModel->allBySeller($this->sellerId());
+        $categories = $this->productModel->distinctCategoriesForSeller($this->sellerId());
+        $this->view('admin/products/index', [
+            'products' => $products,
+            'categories' => $categories,
+            'productsView' => $view,
+            'active' => 'products',
+            'error' => $_GET['error'] ?? null,
+            'success' => $_GET['success'] ?? null,
+        ]);
     }
 
     public function showCreate(): void
@@ -228,11 +239,27 @@ class ProductController extends Controller
         $product = $this->productModel->findByIdForSeller($id, $this->sellerId());
 
         if ($product) {
-            $this->deleteImageFile($product['image_url']);
-            $this->productModel->delete($id, $this->sellerId());
+            $archived = $this->productModel->delete($id, $this->sellerId());
+            if (!$archived) {
+                $this->redirect('/products?error=' . urlencode('This product could not be removed. Please try again.'));
+                return;
+            }
+            // Soft delete: keep the image file since the product can still be viewed
+            // under the "Archived" tab and may be restored later.
         }
 
-        $this->redirect('/products');
+        $this->redirect('/products?success=' . urlencode('Product moved to Archived.'));
+    }
+
+    // POST /products/restore
+    public function restore(): void
+    {
+        $id = (int) ($_POST['id'] ?? 0);
+        $restored = $this->productModel->restore($id, $this->sellerId());
+
+        $this->redirect($restored
+            ? '/products?success=' . urlencode('Product restored.')
+            : '/products?view=archived&error=' . urlencode('Unable to restore this product.'));
     }
 
     /**

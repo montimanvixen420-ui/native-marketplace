@@ -24,7 +24,9 @@ class AdminOrdersController extends Controller
     public function index(): void
     {
         $sellerId = (int) $_SESSION['user_id'];
-        $branchFilter = (string) ($_GET['branch'] ?? '');
+        // Default to the Seller's own POS + online orders (no branch attached).
+        // An explicit ?branch= (even empty, meaning "All branches") is respected.
+        $branchFilter = (string) ($_GET['branch'] ?? 'none');
         $orders = $this->orderModel->allBySeller($sellerId, $branchFilter);
 
         $this->view('admin/orders/index', [

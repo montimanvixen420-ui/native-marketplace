@@ -31,6 +31,8 @@ class StockRequestController extends Controller
             'name' => $_SESSION['user_name'],
             'requests' => $requests,
             'active' => 'stock',
+            'error' => $_GET['error'] ?? null,
+            'success' => $_GET['success'] ?? null,
         ]);
     }
 
@@ -83,5 +85,16 @@ class StockRequestController extends Controller
         );
 
         $this->redirect('/stock-requests');
+    }
+
+    // POST /stock-requests/receive
+    public function receive(): void
+    {
+        $requestId = (int) ($_POST['id'] ?? 0);
+        $result = $this->stockRequestModel->receiveForSeller($requestId, (int) $_SESSION['user_id']);
+
+        $this->redirect($result['success']
+            ? '/stock-requests?success=' . urlencode('Stock received into your inventory.')
+            : '/stock-requests?error=' . urlencode($result['error']));
     }
 }

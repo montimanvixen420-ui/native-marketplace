@@ -11,7 +11,18 @@
     </div>
 
     <section class="mb-8">
-      <h2 class="font-display text-base font-semibold text-ink dark:text-white mb-3">Inventory</h2>
+      <h2 class="font-display text-base font-semibold text-ink dark:text-white mb-1">Inventory</h2>
+      <p class="text-xs text-gray-500 dark:text-white/50 mb-3">
+        <?php if ($selectedBranchId !== null): ?>
+          <?php
+            $invBranchName = 'the selected branch';
+            foreach ($branches as $b) { if ((int) $b['id'] === $selectedBranchId) { $invBranchName = $b['name']; break; } }
+          ?>
+          Current stock loaded into <?= htmlspecialchars($invBranchName) ?>'s POS.
+        <?php else: ?>
+          Your own product catalog.
+        <?php endif; ?>
+      </p>
       <div class="grid grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-ink-2"><p class="text-xs text-gray-500 dark:text-white/50">Products</p><p class="mt-1 text-2xl font-semibold text-ink dark:text-white"><?= (int) $inventory['product_count'] ?></p></div>
         <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-ink-2"><p class="text-xs text-gray-500 dark:text-white/50">Total units</p><p class="mt-1 text-2xl font-semibold text-ink dark:text-white"><?= (int) $inventory['total_units'] ?></p></div>
@@ -22,12 +33,28 @@
 
     <section class="mb-8">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-        <h2 class="font-display text-base font-semibold text-ink dark:text-white">Sales</h2>
+        <div>
+          <h2 class="font-display text-base font-semibold text-ink dark:text-white">Sales</h2>
+          <p class="text-xs text-gray-500 dark:text-white/50">
+            <?php if ($branchFilter === 'none'): ?>
+              Your own Point of Sale Orders (no branch attached).
+            <?php elseif ($branchFilter === ''): ?>
+              All branches combined, plus your own POS and online orders.
+            <?php else: ?>
+              <?php
+                $selectedBranchName = 'the selected branch';
+                foreach ($branches as $b) { if ((int) $b['id'] === $selectedBranchId) { $selectedBranchName = $b['name']; break; } }
+              ?>
+              <?= htmlspecialchars($selectedBranchName) ?> only.
+            <?php endif; ?>
+          </p>
+        </div>
         <?php if (!empty($branches)): ?>
           <form method="get" action="/admin/analytics" class="flex items-center gap-2">
             <label for="branch_id" class="text-xs text-gray-500 dark:text-white/50">Branch</label>
             <select id="branch_id" name="branch_id" onchange="this.form.submit()" class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-ink dark:border-white/10 dark:bg-ink-2 dark:text-white">
-              <option value="">All branches</option>
+              <option value="none" <?= $branchFilter === 'none' ? 'selected' : '' ?>>My POS Orders</option>
+              <option value="" <?= $branchFilter === '' ? 'selected' : '' ?>>All branches</option>
               <?php foreach ($branches as $branch): ?>
                 <option value="<?= (int) $branch['id'] ?>" <?= $selectedBranchId === (int) $branch['id'] ? 'selected' : '' ?>><?= htmlspecialchars($branch['name']) ?></option>
               <?php endforeach; ?>

@@ -556,7 +556,7 @@ class Order
         return $stmt->fetchAll();
     }
 
-    public function getSalesAnalyticsBySeller(int $sellerId, ?int $branchId = null): array
+    public function getSalesAnalyticsBySeller(int $sellerId, ?int $branchId = null, bool $ownOnly = false): array
     {
         $sql = "SELECT
                 COALESCE(SUM(CASE WHEN status = 'completed' THEN total_amount ELSE 0 END), 0) AS lifetime_revenue,
@@ -568,13 +568,15 @@ class Order
         if ($branchId !== null) {
             $sql .= ' AND branch_id = :branch_id';
             $params['branch_id'] = $branchId;
+        } elseif ($ownOnly) {
+            $sql .= ' AND branch_id IS NULL';
         }
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetch() ?: [];
     }
 
-    public function getDailySalesBySeller(int $sellerId, int $days = 7, ?int $branchId = null): array
+    public function getDailySalesBySeller(int $sellerId, int $days = 7, ?int $branchId = null, bool $ownOnly = false): array
     {
         $startDate = (new DateTimeImmutable('today'))->modify('-' . $days . ' days')->format('Y-m-d');
         $sql = "SELECT DATE(created_at) AS sale_date, COUNT(*) AS orders, COALESCE(SUM(total_amount), 0) AS revenue
@@ -583,6 +585,8 @@ class Order
                AND created_at >= :start_date";
         if ($branchId !== null) {
             $sql .= ' AND branch_id = :branch_id';
+        } elseif ($ownOnly) {
+            $sql .= ' AND branch_id IS NULL';
         }
         $sql .= ' GROUP BY DATE(created_at) ORDER BY sale_date DESC';
         $stmt = $this->db->prepare($sql);
@@ -608,7 +612,7 @@ class Order
         return $stmt->fetchAll();
     }
 
-    public function getTopProductsBySeller(int $sellerId, int $limit = 5, ?int $branchId = null): array
+    public function getTopProductsBySeller(int $sellerId, int $limit = 5, ?int $branchId = null, bool $ownOnly = false): array
     {
         $sql = "SELECT oi.product_id, oi.product_name, oi.variant_label,
                     SUM(oi.quantity) AS units_sold, SUM(oi.subtotal) AS revenue
@@ -617,6 +621,8 @@ class Order
              WHERE o.seller_id = :seller_id AND o.status = 'completed'";
         if ($branchId !== null) {
             $sql .= ' AND o.branch_id = :branch_id';
+        } elseif ($ownOnly) {
+            $sql .= ' AND o.branch_id IS NULL';
         }
         $sql .= ' GROUP BY oi.product_id, oi.product_name, oi.variant_label
              ORDER BY units_sold DESC, revenue DESC

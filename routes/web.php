@@ -94,6 +94,7 @@ $router->post('/products/create', ['ProductController', 'store']);
 $router->get('/products/edit', ['ProductController', 'showEdit']);
 $router->post('/products/update', ['ProductController', 'update']);
 $router->post('/products/delete', ['ProductController', 'delete']);
+$router->post('/products/restore', ['ProductController', 'restore']);
 $router->get('/admin/vouchers', ['VoucherController', 'index']);
 $router->post('/admin/vouchers', ['VoucherController', 'store']);
 $router->post('/admin/vouchers/toggle', ['VoucherController', 'toggle']);
@@ -123,6 +124,7 @@ $router->post('/admin/returns/{id}', ['AdminReturnsController', 'update']);
 $router->get('/stock-requests', ['StockRequestController', 'index']);
 $router->get('/stock-requests/create', ['StockRequestController', 'create']);
 $router->post('/stock-requests/store', ['StockRequestController', 'store']);
+$router->post('/stock-requests/receive', ['StockRequestController', 'receive']);
  
 $router->get('/shop', ['StorefrontController', 'browse']);
 $router->get('/reports', ['CustomerReportController', 'index']);
@@ -182,6 +184,8 @@ $router->get('/manager/products/create', ['ManagerProductsController', 'showCrea
 $router->post('/manager/products/create', ['ManagerProductsController', 'store']);
 $router->post('/manager/products/add', ['ManagerProductsController', 'add']);
 $router->post('/manager/products/return', ['ManagerProductsController', 'returnToInventory']);
+$router->get('/manager/products/edit', ['ManagerProductsController', 'showEdit']);
+$router->post('/manager/products/update', ['ManagerProductsController', 'update']);
 
 // ── Branch manager: staff is always created in the manager's own branch ──
 $router->get('/staff/manage', ['StaffController', 'index']);
@@ -214,4 +218,3 @@ $router->get('/staff/reports', ['StaffReportsController', 'index']);
 $router->get('/staff/pos', ['StaffPosController', 'index']);
 $router->get('/staff/pos/customers', ['StaffPosController', 'searchCustomers']);
 $router->post('/staff/pos/checkout', ['StaffPosController', 'checkout']);
- 
