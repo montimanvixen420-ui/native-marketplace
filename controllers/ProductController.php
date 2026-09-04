@@ -69,6 +69,7 @@ class ProductController extends Controller
             'error' => null,
             'availableStocks' => $this->productModel->inventorySourcesBySeller($this->sellerId()),
             'active' => 'products',
+                'categories' => $this->productModel->distinctCategoriesForSeller($this->sellerId()),
         ]);
     }
 
@@ -86,6 +87,7 @@ class ProductController extends Controller
                 'error' => $data['error'] ?? $variants['error'] ?? 'Choose available Seller Inventory stock before adding a product.',
                 'availableStocks' => $this->productModel->inventorySourcesBySeller($this->sellerId()),
                 'active' => 'products',
+                'categories' => $this->productModel->distinctCategoriesForSeller($this->sellerId()),
             ]);
             return;
         }
@@ -97,6 +99,7 @@ class ProductController extends Controller
                 'error' => 'Product stock cannot be more than the selected Seller Inventory stock (' . (int) $sourceStock['stock'] . ').',
                 'availableStocks' => $this->productModel->inventorySourcesBySeller($this->sellerId()),
                 'active' => 'products',
+                'categories' => $this->productModel->distinctCategoriesForSeller($this->sellerId()),
             ]);
             return;
         }
@@ -113,6 +116,7 @@ class ProductController extends Controller
                 'error' => $imageResult['error'],
                 'availableStocks' => $this->productModel->inventorySourcesBySeller($this->sellerId()),
                 'active' => 'products',
+                'categories' => $this->productModel->distinctCategoriesForSeller($this->sellerId()),
             ]);
             return;
         }
@@ -151,6 +155,7 @@ class ProductController extends Controller
                 ? ($this->stockRequestModel->findFulfilledForSeller((int) $product['stock_request_id'], $this->sellerId())['quantity_requested'] ?? null)
                 : null,
             'active' => 'products',
+                'categories' => $this->productModel->distinctCategoriesForSeller($this->sellerId()),
         ]);
     }
 
@@ -173,6 +178,7 @@ class ProductController extends Controller
                 'product' => $_POST,
                 'error' => $data['error'] ?? $variants['error'],
                 'active' => 'products',
+                'categories' => $this->productModel->distinctCategoriesForSeller($this->sellerId()),
             ]);
             return;
         }
@@ -187,8 +193,27 @@ class ProductController extends Controller
                 'error' => 'Product stock cannot be more than the selected Seller Inventory stock (' . (int) $sourceStock['quantity_requested'] . ').',
                 'sourceStockLimit' => (int) $sourceStock['quantity_requested'],
                 'active' => 'products',
+                'categories' => $this->productModel->distinctCategoriesForSeller($this->sellerId()),
             ]);
             return;
+        }
+
+        // This listing was created from a Seller Inventory item (see inventorySourcesBySeller /
+        // createListingFromInventory). Raising its stock draws more from that same reserve, so cap
+        // it at what's still unused there, plus whatever this listing already holds.
+        if (!empty($existing['inventory_source_product_id'])) {
+            $invSource = $this->productModel->inventorySourceForSeller((int) $existing['inventory_source_product_id'], $this->sellerId());
+            $invCap = ((int) ($invSource['stock'] ?? 0)) + (int) $existing['stock'];
+            if ($invSource && $data['stock'] > $invCap) {
+                $this->view('admin/products/form', [
+                    'mode' => 'edit', 'product' => $_POST,
+                    'error' => 'Product stock cannot be more than your available Seller Inventory stock (' . $invCap . ').',
+                    'sourceStockLimit' => $invCap,
+                    'active' => 'products',
+                'categories' => $this->productModel->distinctCategoriesForSeller($this->sellerId()),
+                ]);
+                return;
+            }
         }
         // Image is optional on edit — only replace it if a new file was uploaded
         $imageResult = $this->handleImageUpload(required: false);
@@ -199,6 +224,7 @@ class ProductController extends Controller
                 'product' => $_POST,
                 'error' => $imageResult['error'],
                 'active' => 'products',
+                'categories' => $this->productModel->distinctCategoriesForSeller($this->sellerId()),
             ]);
             return;
         }
@@ -220,6 +246,9 @@ class ProductController extends Controller
 
         $wasOutOfStock = (int) $existing['stock'] === 0;
         $this->productModel->update($id, $this->sellerId(), $data);
+        // Keep the real sellable ledger (seller_pos_stock) in sync with the edited
+        // stock — a no-op for raw Seller Inventory items that never had one.
+        (new SellerPosStock())->syncListingStock($this->sellerId(), $id, (int) $data['stock']);
         if ($matches) {
             $this->productModel->addModerationFlag($id, $matches);
             $this->lockSellerForProhibitedListing();

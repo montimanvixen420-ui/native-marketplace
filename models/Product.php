@@ -20,14 +20,27 @@ class Product
         // the Seller's own "Add product" flow never touches that table. They have
         // their own dedicated management page (Branch Manager > Branch POS Products).
         // Archived (soft-deleted) products are excluded too — see archivedBySeller().
+        //
+        // Stock: a listing created from Seller Inventory has its own products.stock
+        // forced to 0 at creation (see SellerPosStock::createListingFromInventory) —
+        // the real sellable quantity lives in seller_pos_stock instead. Coalesce with
+        // that so the number shown here matches what's actually sellable. Raw Seller
+        // Inventory items (no seller_pos_stock row) just keep using products.stock.
         $stmt = $this->db->prepare(
-            "SELECT * FROM products
-             WHERE seller_id = :seller_id
-               AND status <> 'archived'
-               AND id NOT IN (SELECT product_id FROM product_branches)
-             ORDER BY created_at DESC"
+            "SELECT p.*, COALESCE(sps.total_stock, p.stock) AS stock
+             FROM products p
+             LEFT JOIN (
+                 SELECT product_id, SUM(stock) AS total_stock
+                 FROM seller_pos_stock
+                 WHERE seller_id = :sps_seller_id
+                 GROUP BY product_id
+             ) sps ON sps.product_id = p.id
+             WHERE p.seller_id = :seller_id
+               AND p.status <> 'archived'
+               AND p.id NOT IN (SELECT product_id FROM product_branches)
+             ORDER BY p.created_at DESC"
         );
-        $stmt->execute(['seller_id' => $sellerId]);
+        $stmt->execute(['seller_id' => $sellerId, 'sps_seller_id' => $sellerId]);
 
         return $stmt->fetchAll();
     }
@@ -36,13 +49,20 @@ class Product
     public function archivedBySeller(int $sellerId): array
     {
         $stmt = $this->db->prepare(
-            "SELECT * FROM products
-             WHERE seller_id = :seller_id
-               AND status = 'archived'
-               AND id NOT IN (SELECT product_id FROM product_branches)
-             ORDER BY updated_at DESC"
+            "SELECT p.*, COALESCE(sps.total_stock, p.stock) AS stock
+             FROM products p
+             LEFT JOIN (
+                 SELECT product_id, SUM(stock) AS total_stock
+                 FROM seller_pos_stock
+                 WHERE seller_id = :sps_seller_id
+                 GROUP BY product_id
+             ) sps ON sps.product_id = p.id
+             WHERE p.seller_id = :seller_id
+               AND p.status = 'archived'
+               AND p.id NOT IN (SELECT product_id FROM product_branches)
+             ORDER BY p.updated_at DESC"
         );
-        $stmt->execute(['seller_id' => $sellerId]);
+        $stmt->execute(['seller_id' => $sellerId, 'sps_seller_id' => $sellerId]);
 
         return $stmt->fetchAll();
     }
@@ -85,10 +105,19 @@ class Product
 
     public function findByIdForSeller(int $id, int $sellerId): ?array
     {
+        // Same seller_pos_stock coalesce as allBySeller() — see its comment for why.
         $stmt = $this->db->prepare(
-            "SELECT * FROM products WHERE id = :id AND seller_id = :seller_id LIMIT 1"
+            "SELECT p.*, COALESCE(sps.total_stock, p.stock) AS stock
+             FROM products p
+             LEFT JOIN (
+                 SELECT product_id, SUM(stock) AS total_stock
+                 FROM seller_pos_stock
+                 WHERE product_id = :sps_id
+                 GROUP BY product_id
+             ) sps ON sps.product_id = p.id
+             WHERE p.id = :id AND p.seller_id = :seller_id LIMIT 1"
         );
-        $stmt->execute(['id' => $id, 'seller_id' => $sellerId]);
+        $stmt->execute(['id' => $id, 'sps_id' => $id, 'seller_id' => $sellerId]);
         $product = $stmt->fetch();
 
         return $product ?: null;
@@ -280,19 +309,27 @@ class Product
     /** Inventory totals use variant stock when a product has variants. */
     public function getInventorySummaryBySeller(int $sellerId, int $lowStockThreshold = 5): array
     {
+        // Same seller_pos_stock coalesce as allBySeller() — a listing's own products.stock
+        // is forced to 0 at creation, so fall back to its real seller_pos_stock total.
         $stmt = $this->db->prepare(
             "SELECT
                 COUNT(DISTINCT p.id) AS product_count,
-                COALESCE(SUM(CASE WHEN pv.id IS NULL THEN p.stock ELSE pv.stock END), 0) AS total_units,
-                COALESCE(SUM(CASE WHEN (CASE WHEN pv.id IS NULL THEN p.stock ELSE pv.stock END) BETWEEN 1 AND :threshold THEN 1 ELSE 0 END), 0) AS low_stock_count,
-                COALESCE(SUM(CASE WHEN (CASE WHEN pv.id IS NULL THEN p.stock ELSE pv.stock END) = 0 THEN 1 ELSE 0 END), 0) AS out_of_stock_count
+                COALESCE(SUM(CASE WHEN pv.id IS NULL THEN COALESCE(sps.total_stock, p.stock) ELSE pv.stock END), 0) AS total_units,
+                COALESCE(SUM(CASE WHEN (CASE WHEN pv.id IS NULL THEN COALESCE(sps.total_stock, p.stock) ELSE pv.stock END) BETWEEN 1 AND :threshold THEN 1 ELSE 0 END), 0) AS low_stock_count,
+                COALESCE(SUM(CASE WHEN (CASE WHEN pv.id IS NULL THEN COALESCE(sps.total_stock, p.stock) ELSE pv.stock END) = 0 THEN 1 ELSE 0 END), 0) AS out_of_stock_count
              FROM products p
              LEFT JOIN product_variants pv ON pv.product_id = p.id
+             LEFT JOIN (
+                 SELECT product_id, SUM(stock) AS total_stock
+                 FROM seller_pos_stock
+                 WHERE seller_id = :sps_seller_id
+                 GROUP BY product_id
+             ) sps ON sps.product_id = p.id
              WHERE p.seller_id = :seller_id
                AND p.status <> 'archived'
                AND p.id NOT IN (SELECT product_id FROM product_branches)"
         );
-        $stmt->execute(['seller_id' => $sellerId, 'threshold' => $lowStockThreshold]);
+        $stmt->execute(['seller_id' => $sellerId, 'sps_seller_id' => $sellerId, 'threshold' => $lowStockThreshold]);
         return $stmt->fetch() ?: ['product_count' => 0, 'total_units' => 0, 'low_stock_count' => 0, 'out_of_stock_count' => 0];
     }
 
@@ -300,16 +337,22 @@ class Product
     {
         $stmt = $this->db->prepare(
             "SELECT p.id AS product_id, p.name, p.status, pv.id AS variant_id, pv.size, pv.color,
-                    CASE WHEN pv.id IS NULL THEN p.stock ELSE pv.stock END AS stock
+                    CASE WHEN pv.id IS NULL THEN COALESCE(sps.total_stock, p.stock) ELSE pv.stock END AS stock
              FROM products p
              LEFT JOIN product_variants pv ON pv.product_id = p.id
+             LEFT JOIN (
+                 SELECT product_id, SUM(stock) AS total_stock
+                 FROM seller_pos_stock
+                 WHERE seller_id = :sps_seller_id
+                 GROUP BY product_id
+             ) sps ON sps.product_id = p.id
              WHERE p.seller_id = :seller_id
                AND p.status <> 'archived'
                AND p.id NOT IN (SELECT product_id FROM product_branches)
-               AND (CASE WHEN pv.id IS NULL THEN p.stock ELSE pv.stock END) <= :threshold
+               AND (CASE WHEN pv.id IS NULL THEN COALESCE(sps.total_stock, p.stock) ELSE pv.stock END) <= :threshold
              ORDER BY stock ASC, p.name ASC"
         );
-        $stmt->execute(['seller_id' => $sellerId, 'threshold' => $lowStockThreshold]);
+        $stmt->execute(['seller_id' => $sellerId, 'sps_seller_id' => $sellerId, 'threshold' => $lowStockThreshold]);
         return $stmt->fetchAll();
     }
 

@@ -18,6 +18,22 @@ class SellerPosStock {
     }catch(Throwable $e){if($this->db->inTransaction())$this->db->rollBack();return ['success'=>false,'error'=>$e->getMessage()];}
   }
   public function posProducts(int $sellerId):array{$s=$this->db->prepare("SELECT p.*,sps.stock FROM seller_pos_stock sps INNER JOIN products p ON p.id=sps.product_id WHERE sps.seller_id=:seller_id AND sps.variant_size='' AND sps.variant_color='' AND sps.stock>0 AND p.status='active' ORDER BY p.name");$s->execute(['seller_id'=>$sellerId]);return $s->fetchAll();}
+
+  /**
+   * Overwrites a listing's seller_pos_stock total to match an edited product's new
+   * stock, so "My products" (and future orders) keep agreeing with what's actually
+   * sellable. Only touches products that already have a seller_pos_stock row (i.e.
+   * were created from Seller Inventory) — plain/raw inventory items are untouched.
+   */
+  public function syncListingStock(int $sellerId, int $productId, int $newStock): void {
+    $existing = $this->db->prepare('SELECT 1 FROM seller_pos_stock WHERE seller_id=:seller_id AND product_id=:product_id LIMIT 1');
+    $existing->execute(['seller_id' => $sellerId, 'product_id' => $productId]);
+    if (!$existing->fetchColumn()) return; // not a Seller-Inventory-based listing — nothing to sync
+
+    $this->db->prepare(
+      'UPDATE seller_pos_stock SET stock = :stock WHERE seller_id = :seller_id AND product_id = :product_id AND variant_size = "" AND variant_color = ""'
+    )->execute(['stock' => $newStock, 'seller_id' => $sellerId, 'product_id' => $productId]);
+  }
   /** Creates a separate POS listing from one master Seller Inventory product. */
   public function createListingFromInventory(int $sellerId,int $inventoryProductId,int $posProductId,int $quantity,int $userId): void {
     $this->db->beginTransaction(); try {

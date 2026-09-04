@@ -296,13 +296,48 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
                 Category
               </label>
 
-              <input
-                type="text"
-                name="category"
-                value="<?= htmlspecialchars($product['category'] ?? '') ?>"
-                placeholder="e.g. Apparel"
+              <?php
+                $existingCategories = $categories ?? [];
+                $currentCategory = $product['category'] ?? '';
+                $isNewCategory = $currentCategory !== '' && !in_array($currentCategory, $existingCategories, true);
+              ?>
+              <select
+                id="category_select"
+                onchange="handleCategorySelect(this)"
                 class="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
               >
+                <option value="">No category</option>
+                <?php foreach ($existingCategories as $cat): ?>
+                  <option value="<?= htmlspecialchars($cat, ENT_QUOTES) ?>" <?= $currentCategory === $cat ? 'selected' : '' ?>><?= htmlspecialchars($cat) ?></option>
+                <?php endforeach; ?>
+                <option value="__new__" <?= $isNewCategory ? 'selected' : '' ?>>+ Add new category…</option>
+              </select>
+
+              <input
+                type="text"
+                id="category_new_input"
+                placeholder="Type the new category name"
+                value="<?= $isNewCategory ? htmlspecialchars($currentCategory) : '' ?>"
+                class="w-full mt-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
+                style="<?= $isNewCategory ? '' : 'display:none' ?>"
+              >
+
+              <script>
+                function handleCategorySelect(sel) {
+                  var newInput = document.getElementById('category_new_input');
+                  if (sel.value === '__new__') {
+                    newInput.style.display = 'block';
+                    newInput.name = 'category';
+                    sel.removeAttribute('name');
+                  } else {
+                    newInput.style.display = 'none';
+                    newInput.removeAttribute('name');
+                    sel.name = 'category';
+                  }
+                }
+                // Set the correct initial name attribute on load (edit mode may start on "+ Add new category…").
+                handleCategorySelect(document.getElementById('category_select'));
+              </script>
             </div>
 
             <div>

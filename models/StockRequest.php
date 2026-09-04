@@ -106,7 +106,7 @@ class StockRequest
             $qty = (int) $request['quantity_requested'];
 
             $existing = $this->db->prepare(
-                "SELECT id FROM products
+                "SELECT id, stock FROM products
                  WHERE seller_id = :seller_id AND LOWER(name) = LOWER(:name)
                    AND inventory_source_product_id IS NULL
                    AND id NOT IN (SELECT product_id FROM product_branches)
@@ -114,12 +114,24 @@ class StockRequest
                  LIMIT 1 FOR UPDATE"
             );
             $existing->execute(['seller_id' => $sellerId, 'name' => $request['item_name']]);
-            $productId = $existing->fetchColumn();
+            $existingRow = $existing->fetch();
+            $productId = $existingRow['id'] ?? null;
 
             if ($productId) {
+                // products.stock is an UNSIGNED INT (max ~4.29 billion). If this row's stock is
+                // already corrupted/absurdly high (e.g. from a past underflow bug), adding more
+                // would overflow the column and throw — surface that clearly instead of a generic
+                // DB error, so it's obvious the existing product needs a manual fix first.
+                if ((int) $existingRow['stock'] + $qty > 4000000000) {
+                    $this->db->rollBack();
+                    return ['success' => false, 'error' => 'The existing "' . $request['item_name'] . '" product has an invalid stock value. Please fix its stock in "My products" first, then try receiving again.'];
+                }
+                // Note: stock_request_id is left untouched here (unique per product) — it stays
+                // pointing at whichever request originally created this row. This receive is a
+                // merge/top-up, not a new item, so there's nothing else to link.
                 $this->db->prepare(
-                    "UPDATE products SET stock = stock + :qty, stock_request_id = :request_id WHERE id = :id"
-                )->execute(['qty' => $qty, 'request_id' => $requestId, 'id' => (int) $productId]);
+                    "UPDATE products SET stock = stock + :qty WHERE id = :id"
+                )->execute(['qty' => $qty, 'id' => (int) $productId]);
             } else {
                 $this->db->prepare(
                     "INSERT INTO products (seller_id, stock_request_id, name, price, stock, status)
