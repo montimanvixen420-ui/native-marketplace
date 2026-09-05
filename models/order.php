@@ -301,9 +301,10 @@ class Order
     public function allByBranch(int $branchId): array
     {
         $stmt = $this->db->prepare(
-            "SELECT o.*, u.name AS linked_customer_name
+            "SELECT o.*, u.name AS linked_customer_name, processor.name AS processed_by_name
              FROM orders o
              LEFT JOIN users u ON u.id = o.customer_id
+             LEFT JOIN users processor ON processor.id = o.processed_by_user_id
              WHERE o.branch_id = :branch_id
              ORDER BY o.created_at DESC"
         );
@@ -311,17 +312,48 @@ class Order
         return $stmt->fetchAll();
     }
 
+    public function allByBranchForCashier(int $branchId, int $cashierId): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT o.*, u.name AS linked_customer_name, processor.name AS processed_by_name
+             FROM orders o
+             LEFT JOIN users u ON u.id = o.customer_id
+             LEFT JOIN users processor ON processor.id = o.processed_by_user_id
+             WHERE o.branch_id = :branch_id AND o.processed_by_user_id = :cashier_id
+             ORDER BY o.created_at DESC"
+        );
+        $stmt->execute(['branch_id' => $branchId, 'cashier_id' => $cashierId]);
+        return $stmt->fetchAll();
+    }
+
     public function findByIdForBranch(int $id, int $branchId): ?array
     {
         $stmt = $this->db->prepare(
-            "SELECT o.*, u.name AS linked_customer_name, u.email AS customer_email
+            "SELECT o.*, u.name AS linked_customer_name, u.email AS customer_email,
+                    processor.name AS processed_by_name
              FROM orders o
              LEFT JOIN users u ON u.id = o.customer_id
+             LEFT JOIN users processor ON processor.id = o.processed_by_user_id
              WHERE o.id = :id AND o.branch_id = :branch_id LIMIT 1"
         );
         $stmt->execute(['id' => $id, 'branch_id' => $branchId]);
         $order = $stmt->fetch();
         return $order ?: null;
+    }
+
+    public function findByIdForBranchCashier(int $id, int $branchId, int $cashierId): ?array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT o.*, u.name AS linked_customer_name, u.email AS customer_email,
+                    processor.name AS processed_by_name
+             FROM orders o
+             LEFT JOIN users u ON u.id = o.customer_id
+             LEFT JOIN users processor ON processor.id = o.processed_by_user_id
+             WHERE o.id = :id AND o.branch_id = :branch_id
+               AND o.processed_by_user_id = :cashier_id LIMIT 1"
+        );
+        $stmt->execute(['id' => $id, 'branch_id' => $branchId, 'cashier_id' => $cashierId]);
+        return $stmt->fetch() ?: null;
     }
 
     public function countPendingOnlineByBranch(int $branchId): int

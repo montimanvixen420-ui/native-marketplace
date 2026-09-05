@@ -36,8 +36,26 @@
         <p class="font-display text-lg font-semibold text-gray-900">No adjustments yet</p>
         <p class="text-sm text-gray-500 mt-1">Stock changes made by you or your branch managers will show up here.</p>
       </div>
-    <?php else: ?>
-      <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <?php else: ?>
+      <div class="bg-white border border-gray-200 rounded-lg overflow-hidden p-4">
+
+        <!-- Custom Search & Entries Toolbar -->
+        <div class="flex flex-col sm:flex-row items-center justify-end gap-3 mb-4">
+          <div class="relative w-full sm:w-72">
+            <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+            <input type="text" id="customSearchInput" placeholder="Search adjustments..." class="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-200 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <select id="customEntriesSelect" class="bg-white border border-gray-200 text-sm rounded-lg px-2 py-1.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+            <span class="text-sm text-gray-500">entries per page</span>
+          </div>
+        </div>
+
         <table id="adjustmentsTable" class="w-full text-sm">
           <thead>
             <tr class="text-left text-xs uppercase tracking-wide text-gray-500 border-b border-gray-200">
@@ -74,8 +92,14 @@
                 <td class="px-5 py-3.5 text-gray-500"><?= date('M j, Y g:ia', strtotime($adj['created_at'])) ?></td>
               </tr>
             <?php endforeach; ?>
-          </tbody>
+                    </tbody>
         </table>
+
+        <!-- Footer & Pagination -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 mt-2 border-t border-gray-100">
+          <div id="adj-info" class="text-xs font-medium text-gray-500">Showing 0 to 0 of 0 entries</div>
+          <div id="adj-pagination" class="flex items-center gap-1"></div>
+        </div>
       </div>
     <?php endif; ?>
   </main>
@@ -139,11 +163,19 @@
 
 <script>
 $(document).ready(function () {
-  <?php if (!empty($adjustments)): ?>
-  $('#adjustmentsTable').DataTable({
-    searching: false, paging: true, pageLength: 5, lengthMenu: [5, 10, 25, 50],
+   <?php if (!empty($adjustments)): ?>
+  const adjTable = $('#adjustmentsTable').DataTable({
+    searching: true, paging: true, pageLength: 5, lengthChange: false,
     order: [],
+    layout: { topStart: null, topEnd: null, bottomStart: null, bottomEnd: null },
+    drawCallback: function () {
+      renderDtPillPagination(this.api(), 'adj-pagination', 'adj-info');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
   });
+
+  $('#customSearchInput').on('keyup', function () { adjTable.search(this.value).draw(); });
+  $('#customEntriesSelect').on('change', function () { adjTable.page.len(this.value).draw(); });
   <?php endif; ?>
   lucide.createIcons();
 

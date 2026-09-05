@@ -11,6 +11,25 @@
 <?php if(empty($requests)): ?>
 <div class="p-12 text-center"><p class="font-display text-xl font-bold text-ink dark:text-white">No return requests.</p><p class="mt-2 text-sm text-gray-500">New customer requests will appear here.</p></div>
 <?php else: ?>
+
+<!-- Custom Search & Entries Header Toolbar -->
+<div class="flex flex-col sm:flex-row items-center justify-end gap-3 p-5 pb-0">
+  <div class="relative w-full sm:w-72">
+    <i data-lucide="search" class="w-4 h-4 text-gray-400 dark:text-white/40 absolute left-3 top-1/2 -translate-y-1/2"></i>
+    <input type="text" id="returnsSearchInput" placeholder="Search returns..." class="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-ink border border-gray-200 dark:border-white/15 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-brand">
+  </div>
+
+  <div class="flex items-center gap-2 shrink-0">
+    <select id="returnsEntriesSelect" class="bg-white dark:bg-ink border border-gray-200 dark:border-white/15 text-sm rounded-lg px-2 py-1.5 text-gray-700 dark:text-white/80 focus:outline-none focus:ring-2 focus:ring-brand">
+      <option value="5">5</option>
+      <option value="10">10</option>
+      <option value="15">15</option>
+      <option value="20">20</option>
+    </select>
+    <span class="text-sm text-gray-500 dark:text-white/55">entries per page</span>
+  </div>
+</div>
+
 <table id="returnsTable" class="w-full text-sm">
   <thead>
     <tr class="text-left text-xs uppercase tracking-wide text-gray-500 border-b border-gray-200 dark:border-white/10">
@@ -58,6 +77,12 @@
     <?php endforeach; ?>
   </tbody>
 </table>
+
+<!-- Footer & Pagination -->
+<div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-5 py-4 border-t border-gray-100 dark:border-white/10">
+  <div id="returns-info" class="text-xs font-medium text-gray-500 dark:text-white/55">Showing 0 to 0 of 0 entries</div>
+  <div id="returns-pagination" class="flex items-center gap-1"></div>
+</div>
 <?php endif; ?>
 </section>
 </main>
@@ -75,27 +100,30 @@
 <script>
 $(document).ready(function () {
   <?php if (!empty($requests)): ?>
-  $('#returnsTable').DataTable({
- searching: false,
+  const returnsTable = $('#returnsTable').DataTable({
+        searching: true,
         paging: true,
         pageLength: 5,
-        lengthMenu: [5, 10, 15, 20],
-        lengthChange: true,
+        lengthChange: false,
         order: [[4, 'desc']],
         columnDefs: [
             { orderable: false, targets: 4 } // "Actions" column - walang sort
         ],
         layout: {
             topStart: null,
-            topEnd: 'pageLength',
-            bottomStart: 'info',
-            bottomEnd: 'paging'
+            topEnd: null,
+            bottomStart: null,
+            bottomEnd: null
         },
         drawCallback: function () {
             // I-render ulit ang icons kapag nagbago ang page (paging/sorting)
+            renderDtPillPagination(this.api(), 'returns-pagination', 'returns-info');
             lucide.createIcons();
         }
     });
+
+    $('#returnsSearchInput').on('keyup', function () { returnsTable.search(this.value).draw(); });
+    $('#returnsEntriesSelect').on('change', function () { returnsTable.page.len(this.value).draw(); });
     <?php endif; ?>
 
   if (typeof lucide !== 'undefined') lucide.createIcons();

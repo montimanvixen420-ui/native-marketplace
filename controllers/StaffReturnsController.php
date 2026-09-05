@@ -52,7 +52,7 @@ class StaffReturnsController extends Controller
             return;
         }
 
-        $this->postPurchase->updateReturnStatusForBranch($id, $branchId, $_POST['status'] ?? '');
+        $this->postPurchase->updateReturnStatusForBranch($id, $branchId, $_POST['status'] ?? '', (int) $_SESSION['user_id']);
         $this->redirect('/staff/returns?updated=1');
     }
 }

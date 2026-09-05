@@ -120,7 +120,9 @@ class StaffPosController extends Controller
             0.0,
             0.0,
             null,
-            (int) $profile['branch_id']
+            (int) $profile['branch_id'],
+            (int) $_SESSION['user_id'],
+            'cashier'
         );
 
         if (!$result['success']) {

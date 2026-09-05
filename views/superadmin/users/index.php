@@ -77,7 +77,8 @@
                 ];
                 $statusClass = $statusStyles[$user['status']] ?? 'bg-gray-100 text-gray-600';
               ?>
-              <tr>
+              <tr class="user-row"
+                  data-search="<?= htmlspecialchars(strtolower($user['name'] . ' ' . $user['email'] . ' ' . $user['role'] . ' ' . $user['status'])) ?>">
                 <td class="px-5 py-3 font-medium text-gray-900"><?= htmlspecialchars($user['name']) ?></td>
                 <td class="px-5 py-3 text-gray-600"><?= htmlspecialchars($user['email']) ?></td>
                 <td class="px-5 py-3 text-gray-600">
@@ -134,18 +135,17 @@
           <?php endif; ?>
         </tbody>
       </table>
+
+      <!-- Custom pagination footer (same style as Orders page) -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-5 py-4 border-t border-gray-100">
+        <div id="us-info" class="text-xs font-medium text-gray-500">Showing 0 to 0 of 0 entries</div>
+        <div id="us-pagination" class="flex items-center gap-1"></div>
+      </div>
     </div>
 
   </main>
 
 </div>
-
-<!-- DataTables (Tailwind styling) -->
-<link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.tailwindcss.css">
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/2.1.8/js/dataTables.tailwindcss.js"></script>
 
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -154,54 +154,89 @@
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
 <script>
-$(document).ready(function () {
-    <?php if (!empty($users)): ?>
-    var table = $('#usersTable').DataTable({
-        searching: true,
-        paging: true,
-        pageLength: 5,
-        lengthMenu: [5, 10, 25, 50],
-        order: [[4, 'desc']],
-        columnDefs: [
-            { orderable: false, targets: 5 }
-        ],
-        layout: { topStart: null, topEnd: 'search', bottomStart: 'info', bottomEnd: 'paging' },
-        drawCallback: function () {
-            lucide.createIcons();
+let usCurrentPage = 1;
+
+function superadminUsers_updateTable(resetPage = false) {
+  if (resetPage) usCurrentPage = 1;
+
+  const perPage = parseInt(document.getElementById('usersPageLength')?.value || '5');
+  const rows = Array.from(document.querySelectorAll('#usersTable tbody .user-row'));
+
+  const totalEntries = rows.length;
+  const totalPages = Math.ceil(totalEntries / perPage) || 1;
+  if (usCurrentPage > totalPages) usCurrentPage = totalPages;
+
+  const startIndex = (usCurrentPage - 1) * perPage;
+  const endIndex = startIndex + perPage;
+
+  rows.forEach(r => r.style.display = 'none');
+  rows.slice(startIndex, endIndex).forEach(r => r.style.display = '');
+
+  const infoEl = document.getElementById('us-info');
+  if (infoEl) {
+    infoEl.textContent = totalEntries === 0
+      ? 'Showing 0 to 0 of 0 entries'
+      : `Showing ${startIndex + 1} to ${Math.min(endIndex, totalEntries)} of ${totalEntries} entries`;
+  }
+
+  const pagEl = document.getElementById('us-pagination');
+  if (pagEl) {
+    pagEl.innerHTML = '';
+    const mkBtn = (label, disabled, onClick) => {
+      const btn = document.createElement('button');
+      btn.className = `px-2.5 py-1 text-xs font-semibold rounded-lg border border-gray-200 transition-colors ${disabled ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-gray-100 text-gray-700'}`;
+      btn.textContent = label;
+      btn.disabled = disabled;
+      btn.onclick = onClick;
+      return btn;
+    };
+    pagEl.appendChild(mkBtn('«', usCurrentPage === 1, () => { usCurrentPage = 1; superadminUsers_updateTable(); }));
+    pagEl.appendChild(mkBtn('‹', usCurrentPage === 1, () => { if (usCurrentPage > 1) { usCurrentPage--; superadminUsers_updateTable(); } }));
+    for (let p = 1; p <= totalPages; p++) {
+      const isActive = p === usCurrentPage;
+      const pageBtn = document.createElement('button');
+      pageBtn.className = `px-3 py-1 text-xs font-bold rounded-lg transition-colors ${isActive ? 'bg-blue-600 text-white border border-blue-600' : 'border border-gray-200 hover:bg-gray-100 text-gray-700'}`;
+      pageBtn.textContent = p;
+      pageBtn.onclick = () => { usCurrentPage = p; superadminUsers_updateTable(); };
+      pagEl.appendChild(pageBtn);
+    }
+    pagEl.appendChild(mkBtn('›', usCurrentPage === totalPages || totalEntries === 0, () => { if (usCurrentPage < totalPages) { usCurrentPage++; superadminUsers_updateTable(); } }));
+    pagEl.appendChild(mkBtn('»', usCurrentPage === totalPages || totalEntries === 0, () => { usCurrentPage = totalPages; superadminUsers_updateTable(); }));
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  <?php if (!empty($users)): ?>
+  superadminUsers_updateTable(true);
+  document.getElementById('usersPageLength')?.addEventListener('change', () => superadminUsers_updateTable(true));
+  <?php endif; ?>
+  lucide.createIcons();
+
+  document.addEventListener('submit', function (e) {
+    if (!e.target.classList.contains('js-confirm-form')) return;
+    e.preventDefault();
+    const form = e.target;
+    const title = form.dataset.title;
+    const text = form.dataset.text;
+    const icon = form.dataset.icon || 'question';
+    const confirmText = form.dataset.confirmText || 'Yes, continue';
+    const confirmColor = form.dataset.confirmColor || '#0d9488';
+
+    Swal.fire({
+        title: title,
+        text: text,
+        icon: icon,
+        showCancelButton: true,
+        confirmButtonText: confirmText,
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: confirmColor,
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            form.submit();
         }
     });
-
-    $('#usersPageLength').on('change', function () {
-        table.page.len(parseInt(this.value, 10)).draw();
-    });
-    <?php endif; ?>
-
-    lucide.createIcons();
-
-    $(document).on('submit', '.js-confirm-form', function (e) {
-        e.preventDefault();
-        const form = this;
-        const title = $(form).data('title');
-        const text = $(form).data('text');
-        const icon = $(form).data('icon') || 'question';
-        const confirmText = $(form).data('confirm-text') || 'Yes, continue';
-        const confirmColor = $(form).data('confirm-color') || '#0d9488';
-
-        Swal.fire({
-            title: title,
-            text: text,
-            icon: icon,
-            showCancelButton: true,
-            confirmButtonText: confirmText,
-            cancelButtonText: 'Cancel',
-            confirmButtonColor: confirmColor,
-            cancelButtonColor: '#6b7280',
-            reverseButtons: true
-        }).then((result) => {
-            if (result.isConfirmed) {
-                form.submit();
-            }
-        });
-    });
+  });
 });
 </script>

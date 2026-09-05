@@ -45,6 +45,10 @@
             <p class="text-xs text-gray-500 mb-1">Total</p>
             <p class="font-medium text-gray-900">₱<?= number_format((float) $order['total_amount'], 2) ?></p>
           </div>
+          <div>
+            <p class="text-xs text-gray-500 mb-1">Processed by</p>
+            <p class="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700"><i data-lucide="user-round" class="h-3.5 w-3.5"></i><?= htmlspecialchars($order['processed_by_name'] ?? 'System / online') ?></p>
+          </div>
           <?php if (!empty($order['shipping_address_text'])): ?>
             <div class="col-span-2">
               <p class="text-xs text-gray-500 mb-1">Delivery address</p>

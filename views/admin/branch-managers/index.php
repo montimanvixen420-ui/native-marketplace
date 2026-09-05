@@ -69,7 +69,8 @@
         <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
           <?php foreach ($managers as $manager): ?>
             <?php [$mFirst, $mLast] = array_pad(explode(' ', $manager['name'], 2), 2, ''); ?>
-            <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/50 transition-colors">
+            <tr class="mgr-row hover:bg-gray-50/50 dark:hover:bg-slate-700/50 transition-colors"
+                data-search="<?= htmlspecialchars(strtolower($manager['name'] . ' ' . $manager['email'] . ' ' . $manager['branch_name'])) ?>">
               <td class="px-4 py-4 text-center">
                 <div class="mgr-avatar dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800 mx-auto">
                   <?= htmlspecialchars(strtoupper(substr($manager['name'], 0, 1))) ?>
@@ -125,6 +126,12 @@
           <?php endforeach; ?>
         </tbody>
       </table>
+
+      <!-- Custom pagination footer (same style as Orders page) -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 mt-2 border-t border-gray-100 dark:border-slate-700/60">
+        <div id="bm-info" class="text-xs font-medium text-gray-500 dark:text-gray-400">Showing 0 to 0 of 0 entries</div>
+        <div id="bm-pagination" class="flex items-center gap-1"></div>
+      </div>
     </section>
   </main>
 </div>
@@ -207,45 +214,72 @@
   </button>
 </div>
 
-<!-- DataTables Scripts -->
-<link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.tailwindcss.css">
+<!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/2.1.8/js/dataTables.tailwindcss.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
 <script>
+let bmCurrentPage = 1;
+
+function branchManagers_updateTable(resetPage = false) {
+  if (resetPage) bmCurrentPage = 1;
+
+  const searchValue = (document.getElementById('customSearchInput')?.value || '').toLowerCase().trim();
+  const perPage = parseInt(document.getElementById('customEntriesSelect')?.value || '5');
+
+  const rows = Array.from(document.querySelectorAll('#managersTable tbody .mgr-row'));
+  const matchingRows = rows.filter(row => !searchValue || row.dataset.search.includes(searchValue));
+
+  const totalEntries = matchingRows.length;
+  const totalPages = Math.ceil(totalEntries / perPage) || 1;
+  if (bmCurrentPage > totalPages) bmCurrentPage = totalPages;
+
+  const startIndex = (bmCurrentPage - 1) * perPage;
+  const endIndex = startIndex + perPage;
+
+  rows.forEach(r => r.style.display = 'none');
+  matchingRows.slice(startIndex, endIndex).forEach(r => r.style.display = '');
+
+  const infoEl = document.getElementById('bm-info');
+  if (infoEl) {
+    infoEl.textContent = totalEntries === 0
+      ? 'Showing 0 to 0 of 0 entries'
+      : `Showing ${startIndex + 1} to ${Math.min(endIndex, totalEntries)} of ${totalEntries} entries`;
+  }
+
+  const pagEl = document.getElementById('bm-pagination');
+  if (pagEl) {
+    pagEl.innerHTML = '';
+    const mkBtn = (label, disabled, onClick) => {
+      const btn = document.createElement('button');
+      btn.className = `px-2.5 py-1 text-xs font-semibold rounded-lg border border-gray-200 dark:border-slate-700 transition-colors ${disabled ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200'}`;
+      btn.textContent = label;
+      btn.disabled = disabled;
+      btn.onclick = onClick;
+      return btn;
+    };
+    pagEl.appendChild(mkBtn('«', bmCurrentPage === 1, () => { bmCurrentPage = 1; branchManagers_updateTable(); }));
+    pagEl.appendChild(mkBtn('‹', bmCurrentPage === 1, () => { if (bmCurrentPage > 1) { bmCurrentPage--; branchManagers_updateTable(); } }));
+    for (let p = 1; p <= totalPages; p++) {
+      const isActive = p === bmCurrentPage;
+      const pageBtn = document.createElement('button');
+      pageBtn.className = `px-3 py-1 text-xs font-bold rounded-lg transition-colors ${isActive ? 'bg-blue-600 text-white border border-blue-600' : 'border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200'}`;
+      pageBtn.textContent = p;
+      pageBtn.onclick = () => { bmCurrentPage = p; branchManagers_updateTable(); };
+      pagEl.appendChild(pageBtn);
+    }
+    pagEl.appendChild(mkBtn('›', bmCurrentPage === totalPages || totalEntries === 0, () => { if (bmCurrentPage < totalPages) { bmCurrentPage++; branchManagers_updateTable(); } }));
+    pagEl.appendChild(mkBtn('»', bmCurrentPage === totalPages || totalEntries === 0, () => { bmCurrentPage = totalPages; branchManagers_updateTable(); }));
+  }
+}
+
 $(function () {
   <?php if (!empty($managers)): ?>
-  const table = $('#managersTable').DataTable({
-    paging: true,
-    pageLength: 5,
-    lengthChange: false,
-    searching: true,
-    order: [[1, 'asc']], // Sort by Manager Name
-    columnDefs: [
-      { orderable: false, targets: [0, -1] } // Disable sort on Avatar & Actions
-    ],
-    layout: {
-      topStart: null,
-      topEnd: null,
-      bottomStart: 'info',
-      bottomEnd: 'paging'
-    },
-    drawCallback: function () {
-      if (typeof lucide !== 'undefined') lucide.createIcons();
-    }
-  });
+  branchManagers_updateTable(true);
 
-  // Custom Search Toolbar Listeners
-  $('#customSearchInput').on('keyup', function () {
-    table.search(this.value).draw();
-  });
-
-  $('#customEntriesSelect').on('change', function () {
-    table.page.len(this.value).draw();
-  });
+  $('#customSearchInput').on('keyup', function () { branchManagers_updateTable(true); });
+  $('#customEntriesSelect').on('change', function () { branchManagers_updateTable(true); });
   <?php endif; ?>
 
   if (typeof lucide !== 'undefined') lucide.createIcons();

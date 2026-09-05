@@ -115,9 +115,15 @@
                 </form>
               </td>
             </tr>
-          <?php endforeach; ?>
+                   <?php endforeach; ?>
         </tbody>
       </table>
+
+      <!-- Footer & Pagination -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 mt-2 border-t border-gray-100 dark:border-slate-700/60">
+        <div id="alloc-info" class="text-xs font-medium text-gray-500 dark:text-gray-400">Showing 0 to 0 of 0 entries</div>
+        <div id="alloc-pagination" class="flex items-center gap-1"></div>
+      </div>
     </div>
   </main>
 
@@ -147,13 +153,14 @@ $(document).ready(function () {
         columnDefs: [
             { orderable: false, targets: 2 }
         ],
-        layout: {
+               layout: {
             topStart: null,
             topEnd: null,
-            bottomStart: 'info',
-            bottomEnd: 'paging'
+            bottomStart: null,
+            bottomEnd: null
         },
         drawCallback: function () {
+            renderDtPillPagination(this.api(), 'alloc-pagination', 'alloc-info');
             lucide.createIcons();
         }
     });

@@ -108,10 +108,14 @@ class Report
                     r.review_note,
                     r.reviewed_at,
                     r.created_at,
-                    p.name AS target_label
+                    p.name AS target_label,
+                    reporter.name AS reporter_name,
+                    reviewer.name AS reviewed_by_name
                 FROM customer_reports r
                 INNER JOIN products p ON r.target_type = 'product' AND p.id = r.target_id
                 INNER JOIN product_branches pb ON pb.product_id = p.id
+                LEFT JOIN users reporter ON reporter.id = r.reporter_id
+                LEFT JOIN users reviewer ON reviewer.id = r.reviewer_id
                 WHERE pb.branch_id = :branch_id
                 GROUP BY r.id
                 ORDER BY FIELD(r.status,'open','reviewing','resolved','dismissed'), r.created_at DESC";

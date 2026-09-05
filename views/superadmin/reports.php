@@ -1,8 +1,15 @@
+<style>
+  #safetyReportsTable th, #safetyReportsTable td{padding:0.75rem 1rem;vertical-align:top;}
+  #safetyReportsTable thead th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:#6b7280;border-bottom:1px solid #e5e7eb;}
+  #safetyReportsTable tbody tr{border-bottom:1px solid #f3f4f6;}
+  #safetyReportsTable tbody tr:last-child{border-bottom:0;}
+</style>
+
 <div class="flex min-h-screen bg-gray-50">
 
   <?php require __DIR__ . '/../partials/sidebar.php'; ?>
 
-  <main class="flex-1 px-8 py-8">
+  <main class="flex-1 min-w-0 px-8 py-8">
     <div class="flex flex-wrap items-end justify-between gap-3 mb-6">
       <div>
         <h1 class="font-display font-semibold text-2xl text-gray-900">Customer Safety Reports</h1>
@@ -64,7 +71,7 @@
                 ];
                 $statusClass = $statusStyles[$report['status']] ?? 'bg-gray-100 text-gray-600';
               ?>
-              <tr data-type="<?= htmlspecialchars($report['target_type']) ?>" data-status="<?= htmlspecialchars($report['status']) ?>">
+              <tr class="report-row" data-type="<?= htmlspecialchars($report['target_type']) ?>" data-status="<?= htmlspecialchars($report['status']) ?>">
                 <td><?= htmlspecialchars(ucfirst($report['target_type'])) ?></td>
                 <td><?= htmlspecialchars($report['target_label'] ?? 'Removed item') ?></td>
                 <td><?= htmlspecialchars($report['reporter_name']) ?></td>
@@ -103,53 +110,80 @@
           </tbody>
         </table>
       </div>
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 mt-2 border-t border-gray-100">
+        <div id="sar-info" class="text-xs font-medium text-gray-500">Showing 0 to 0 of 0 entries</div>
+        <div id="sar-pagination" class="flex items-center gap-1"></div>
+      </div>
     </section>
 
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-    $(function () {
-      var table = $('#safetyReportsTable').DataTable({
-        paging: true,
-        pageLength: 5,
-        lengthChange: false,
-        searching: true,
-        order: [[4, 'desc']], // Default sort by Requested Date
-        layout: {
-            topStart: null,
-            topEnd: null,
-            bottomStart: 'info',
-            bottomEnd: 'paging'
-        },
-        drawCallback: function () {
-            if (typeof lucide !== 'undefined') lucide.createIcons();
+    let sarCurrentPage = 1;
+
+    function safetyReports_updateTable(resetPage = false) {
+      if (resetPage) sarCurrentPage = 1;
+
+      const typeFilter = document.getElementById('reportTypeFilter')?.value || '';
+      const statusFilter = document.getElementById('reportStatusFilter')?.value || '';
+      const perPage = parseInt(document.getElementById('customEntriesSelect')?.value || '5');
+
+      const rows = Array.from(document.querySelectorAll('#safetyReportsTable tbody .report-row'));
+      const matchingRows = rows.filter(row => {
+        const matchesType = !typeFilter || row.dataset.type === typeFilter;
+        const matchesStatus = !statusFilter || row.dataset.status === statusFilter;
+        return matchesType && matchesStatus;
+      });
+
+      const totalEntries = matchingRows.length;
+      const totalPages = Math.ceil(totalEntries / perPage) || 1;
+      if (sarCurrentPage > totalPages) sarCurrentPage = totalPages;
+
+      const startIndex = (sarCurrentPage - 1) * perPage;
+      const endIndex = startIndex + perPage;
+
+      rows.forEach(r => r.style.display = 'none');
+      matchingRows.slice(startIndex, endIndex).forEach(r => r.style.display = '');
+
+      const infoEl = document.getElementById('sar-info');
+      if (infoEl) {
+        infoEl.textContent = totalEntries === 0
+          ? 'Showing 0 to 0 of 0 entries'
+          : `Showing ${startIndex + 1} to ${Math.min(endIndex, totalEntries)} of ${totalEntries} entries`;
+      }
+
+      const pagEl = document.getElementById('sar-pagination');
+      if (pagEl) {
+        pagEl.innerHTML = '';
+        const mkBtn = (label, disabled, onClick) => {
+          const btn = document.createElement('button');
+          btn.className = `px-2.5 py-1 text-xs font-semibold rounded-lg border border-gray-200 transition-colors ${disabled ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-gray-100 text-gray-700'}`;
+          btn.textContent = label;
+          btn.disabled = disabled;
+          btn.onclick = onClick;
+          return btn;
+        };
+        pagEl.appendChild(mkBtn('«', sarCurrentPage === 1, () => { sarCurrentPage = 1; safetyReports_updateTable(); }));
+        pagEl.appendChild(mkBtn('‹', sarCurrentPage === 1, () => { if (sarCurrentPage > 1) { sarCurrentPage--; safetyReports_updateTable(); } }));
+        for (let p = 1; p <= totalPages; p++) {
+          const isActive = p === sarCurrentPage;
+          const pageBtn = document.createElement('button');
+          pageBtn.className = `px-3 py-1 text-xs font-bold rounded-lg transition-colors ${isActive ? 'bg-blue-600 text-white border border-blue-600' : 'border border-gray-200 hover:bg-gray-100 text-gray-700'}`;
+          pageBtn.textContent = p;
+          pageBtn.onclick = () => { sarCurrentPage = p; safetyReports_updateTable(); };
+          pagEl.appendChild(pageBtn);
         }
-    });
+        pagEl.appendChild(mkBtn('›', sarCurrentPage === totalPages || totalEntries === 0, () => { if (sarCurrentPage < totalPages) { sarCurrentPage++; safetyReports_updateTable(); } }));
+        pagEl.appendChild(mkBtn('»', sarCurrentPage === totalPages || totalEntries === 0, () => { sarCurrentPage = totalPages; safetyReports_updateTable(); }));
+      }
+    }
 
-      $.fn.dataTable.ext.search.push(function (settings, searchData, index, rowData, counter) {
-        if (settings.nTable.id !== 'safetyReportsTable') return true;
+    $(function () {
+      safetyReports_updateTable(true);
 
-        var row = table.row(index).node();
-        var type = $(row).data('type');
-        var status = $(row).data('status');
-
-        var typeFilter = $('#reportTypeFilter').val();
-        var statusFilter = $('#reportStatusFilter').val();
-
-        if (typeFilter && type !== typeFilter) return false;
-        if (statusFilter && status !== statusFilter) return false;
-
-        return true;
+      $('#reportTypeFilter, #reportStatusFilter, #customEntriesSelect').on('change', function () {
+        safetyReports_updateTable(true);
       });
- $('#reportPageLength').on('change', function () {
-    table.page.len(parseInt(this.value, 10)).draw();
-  });
-      $('#reportTypeFilter, #reportStatusFilter').on('change', function () {
-        table.draw();
-      });
-      
 
       $('#safetyReportsTable').on('click', '.view-report-btn', function () {
         var btn = this;

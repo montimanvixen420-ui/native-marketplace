@@ -19,6 +19,30 @@
 <?php if(empty($requests)): ?>
 <div class="p-12 text-center"><p class="font-display text-xl font-bold text-ink dark:text-white">No return requests.</p><p class="mt-2 text-sm text-gray-500">New customer requests for this branch will appear here.</p></div>
 <?php else: ?>
+<div class="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between">
+  <div class="relative w-full max-w-xs">
+    <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"></i>
+    <input type="text" id="rt-search-input" oninput="staffReturns_updateTable(true)" placeholder="Search order or customer..." class="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-xs text-ink placeholder:text-gray-400 focus:border-brand focus:outline-none dark:border-white/15 dark:bg-ink dark:text-white">
+  </div>
+  <div class="flex flex-wrap items-center gap-3">
+    <select id="rt-status-filter" onchange="staffReturns_updateTable(true)" class="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 focus:border-brand focus:outline-none dark:border-white/15 dark:bg-ink dark:text-white">
+      <option value="">All statuses</option>
+      <option value="requested">Requested</option>
+      <option value="approved">Approved</option>
+      <option value="rejected">Rejected</option>
+      <option value="refunded">Refunded</option>
+    </select>
+    <div class="flex items-center gap-2">
+      <select id="rt-per-page" onchange="staffReturns_updateTable(true)" class="rounded-xl border border-gray-200 bg-white px-2.5 py-2 text-xs font-semibold text-gray-700 focus:border-brand focus:outline-none dark:border-white/15 dark:bg-ink dark:text-white">
+        <option value="5" selected>5</option>
+        <option value="10">10</option>
+        <option value="15">15</option>
+        <option value="20">20</option>
+      </select>
+      <span class="text-xs text-gray-500 dark:text-white/55">entries per page</span>
+    </div>
+  </div>
+</div>
 <table id="returnsTable" class="w-full text-sm">
   <thead>
     <tr class="text-left text-xs uppercase tracking-wide text-gray-500 border-b border-gray-200 dark:border-white/10">
@@ -26,12 +50,15 @@
       <th class="px-3 py-3 font-semibold">Order / Customer</th>
       <th class="px-3 py-3 font-semibold">Reason</th>
       <th class="px-3 py-3 font-semibold">Status</th>
+      <th class="px-3 py-3 font-semibold">Handled by</th>
       <th class="px-5 py-3 font-semibold text-right">Action</th>
     </tr>
   </thead>
   <tbody>
     <?php foreach($requests as $request): ?>
-    <tr class="border-b border-gray-100 last:border-0 dark:border-white/10">
+    <tr class="return-row border-b border-gray-100 last:border-0 dark:border-white/10"
+        data-search="<?= htmlspecialchars(strtolower($request['product_name'] . ' ' . $request['order_number'] . ' ' . $request['customer_name'])) ?>"
+        data-status="<?= htmlspecialchars(strtolower($request['status'])) ?>">
       <td class="px-5 py-3.5 align-top">
         <p class="font-bold text-ink dark:text-white"><?= htmlspecialchars($request['product_name']) ?> <span class="font-normal text-gray-400">× <?= (int)$request['quantity'] ?></span></p>
       </td>
@@ -46,6 +73,7 @@
       <td class="px-3 py-3.5 align-top">
         <span class="rounded-full bg-brand-light px-3 py-1 text-xs font-bold text-brand"><?= htmlspecialchars(ucfirst($request['status'])) ?></span>
       </td>
+      <td class="px-3 py-3.5 align-top"><span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700"><i data-lucide="user-round" class="h-3.5 w-3.5"></i><?= htmlspecialchars($request['handled_by_name'] ?? 'Not handled yet') ?></span></td>
       <td class="px-5 py-3.5 align-top text-right">
         <?php if($canProcess && in_array($request['status'],['requested','approved'],true)): ?>
         <form method="POST" action="/staff/returns/<?= (int)$request['id'] ?>" class="js-return-status-form inline-flex items-center gap-1">
@@ -66,46 +94,100 @@
     <?php endforeach; ?>
   </tbody>
 </table>
+
+<!-- Custom pagination footer (same style as Orders page) -->
+<div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-5 py-4 border-t border-gray-100 dark:border-white/10">
+  <div id="rt-info" class="text-xs font-medium text-gray-500 dark:text-white/55">Showing 0 to 0 of 0 entries</div>
+  <div id="rt-pagination" class="flex items-center gap-1"></div>
+</div>
 <?php endif; ?>
 </section>
 </main>
 </div>
 
-<!-- DataTables (Tailwind styling) -->
-<link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.tailwindcss.css">
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/2.1.8/js/dataTables.tailwindcss.js"></script>
-
 <!-- Lucide icons -->
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
 <script>
-$(document).ready(function () {
-  <?php if (!empty($requests)): ?>
-  $('#returnsTable').DataTable({
- searching: false,
-        paging: true,
-        pageLength: 5,
-        lengthMenu: [5, 10, 15, 20],
-        lengthChange: true,
-        order: [[3, 'desc']],
-        columnDefs: [
-            { orderable: false, targets: 4 } // "Action" column - walang sort
-        ],
-        layout: {
-            topStart: null,
-            topEnd: 'pageLength',
-            bottomStart: 'info',
-            bottomEnd: 'paging'
-        },
-        drawCallback: function () {
-            // I-render ulit ang icons kapag nagbago ang page (paging/sorting)
-            lucide.createIcons();
-        }
-    });
-    <?php endif; ?>
+let rtCurrentPage = 1;
 
+function staffReturns_updateTable(resetPage = false) {
+  if (resetPage) rtCurrentPage = 1;
+
+  const searchValue = (document.getElementById('rt-search-input')?.value || '').toLowerCase().trim();
+  const statusValue = (document.getElementById('rt-status-filter')?.value || '').toLowerCase();
+  const perPage = parseInt(document.getElementById('rt-per-page')?.value || '5');
+
+  const rows = Array.from(document.querySelectorAll('#returnsTable tbody .return-row'));
+
+  // Filter matching rows
+  const matchingRows = rows.filter(row => {
+    const matchesSearch = !searchValue || row.dataset.search.includes(searchValue);
+    const matchesStatus = !statusValue || row.dataset.status === statusValue;
+    return matchesSearch && matchesStatus;
+  });
+
+  const totalEntries = matchingRows.length;
+  const totalPages = Math.ceil(totalEntries / perPage) || 1;
+
+  if (rtCurrentPage > totalPages) rtCurrentPage = totalPages;
+
+  const startIndex = (rtCurrentPage - 1) * perPage;
+  const endIndex = startIndex + perPage;
+
+  // Hide all rows first
+  rows.forEach(r => r.style.display = 'none');
+
+  // Show only paginated matching rows
+  matchingRows.slice(startIndex, endIndex).forEach(r => r.style.display = '');
+
+  // Update footer info text
+  const infoEl = document.getElementById('rt-info');
+  if (infoEl) {
+    if (totalEntries === 0) {
+      infoEl.textContent = 'Showing 0 to 0 of 0 entries';
+    } else {
+      const displayStart = startIndex + 1;
+      const displayEnd = Math.min(endIndex, totalEntries);
+      infoEl.textContent = `Showing ${displayStart} to ${displayEnd} of ${totalEntries} entries`;
+    }
+  }
+
+  // Render pagination buttons
+  const pagEl = document.getElementById('rt-pagination');
+  if (pagEl) {
+    pagEl.innerHTML = '';
+
+    const mkBtn = (label, disabled, onClick) => {
+      const btn = document.createElement('button');
+      btn.className = `px-2.5 py-1 text-xs font-semibold rounded-lg border border-gray-200 dark:border-white/15 transition-colors ${disabled ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-white'}`;
+      btn.textContent = label;
+      btn.disabled = disabled;
+      btn.onclick = onClick;
+      return btn;
+    };
+
+    pagEl.appendChild(mkBtn('«', rtCurrentPage === 1, () => { rtCurrentPage = 1; staffReturns_updateTable(); }));
+    pagEl.appendChild(mkBtn('‹', rtCurrentPage === 1, () => { if (rtCurrentPage > 1) { rtCurrentPage--; staffReturns_updateTable(); } }));
+
+    for (let p = 1; p <= totalPages; p++) {
+      const isActive = p === rtCurrentPage;
+      const pageBtn = document.createElement('button');
+      pageBtn.className = `px-3 py-1 text-xs font-bold rounded-lg transition-colors ${isActive ? 'bg-brand text-white' : 'border border-gray-200 dark:border-white/15 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-white'}`;
+      pageBtn.textContent = p;
+      pageBtn.onclick = () => { rtCurrentPage = p; staffReturns_updateTable(); };
+      pagEl.appendChild(pageBtn);
+    }
+
+    pagEl.appendChild(mkBtn('›', rtCurrentPage === totalPages || totalEntries === 0, () => { if (rtCurrentPage < totalPages) { rtCurrentPage++; staffReturns_updateTable(); } }));
+    pagEl.appendChild(mkBtn('»', rtCurrentPage === totalPages || totalEntries === 0, () => { rtCurrentPage = totalPages; staffReturns_updateTable(); }));
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  <?php if (!empty($requests)): ?>
+  staffReturns_updateTable(true);
+  <?php endif; ?>
   if (typeof lucide !== 'undefined') lucide.createIcons();
   bindReturnStatusForms();
 });

@@ -82,20 +82,23 @@ class PostPurchase
      */
     public function returnsByBranch(int $branchId): array
     {
-        $stmt = $this->db->prepare("SELECT rr.*, oi.product_name, oi.variant_label, oi.quantity, o.id AS order_number, u.name AS customer_name
+        $stmt = $this->db->prepare("SELECT rr.*, oi.product_name, oi.variant_label, oi.quantity, o.id AS order_number,
+            u.name AS customer_name, handler.name AS handled_by_name
             FROM return_requests rr INNER JOIN order_items oi ON oi.id = rr.order_item_id
             INNER JOIN orders o ON o.id = oi.order_id INNER JOIN users u ON u.id = rr.customer_id
+            LEFT JOIN users handler ON handler.id = rr.handled_by_user_id
             WHERE o.branch_id = :branch_id ORDER BY rr.created_at DESC");
         $stmt->execute(['branch_id' => $branchId]);
         return $stmt->fetchAll();
     }
 
-    public function updateReturnStatusForBranch(int $requestId, int $branchId, string $status): bool
+    public function updateReturnStatusForBranch(int $requestId, int $branchId, string $status, int $handledByUserId): bool
     {
         if (!in_array($status, ['approved', 'rejected', 'refunded'], true)) return false;
         $stmt = $this->db->prepare("UPDATE return_requests rr INNER JOIN order_items oi ON oi.id = rr.order_item_id
-            INNER JOIN orders o ON o.id = oi.order_id SET rr.status = :status
+            INNER JOIN orders o ON o.id = oi.order_id
+            SET rr.status = :status, rr.handled_by_user_id = :handled_by_user_id, rr.handled_at = NOW()
             WHERE rr.id = :id AND o.branch_id = :branch_id AND rr.status IN ('requested', 'approved')");
-        return $stmt->execute(['status' => $status, 'id' => $requestId, 'branch_id' => $branchId]);
+        return $stmt->execute(['status' => $status, 'handled_by_user_id' => $handledByUserId, 'id' => $requestId, 'branch_id' => $branchId]);
     }
 }

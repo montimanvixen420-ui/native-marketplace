@@ -95,7 +95,8 @@
                   $badgeStyle = "background-color: #2563eb; color: #ffffff;";
                 }
               ?>
-              <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors">
+              <tr class="order-row hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors"
+                  data-search="<?= htmlspecialchars(strtolower(($order['id'] ?? '') . ' ' . ($order['linked_customer_name'] ?? $order['customer_name'] ?? 'walk-in') . ' ' . $order['payment_method'])) ?>">
                 <td class="px-5 py-3.5 font-semibold text-indigo-600 dark:text-indigo-400">#<?= (int) $order['id'] ?></td>
                 <td class="px-3 py-3.5 text-slate-700 dark:text-slate-300">
                   <?= htmlspecialchars($order['linked_customer_name'] ?? $order['customer_name'] ?? 'Walk-in') ?>
@@ -126,61 +127,89 @@
             <?php endforeach; ?>
           </tbody>
         </table>
+
+        <!-- Custom pagination footer (same style as Staff Orders page) -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 mt-2 border-t border-slate-100 dark:border-slate-700/60">
+          <div id="ao-info" class="text-xs font-medium text-slate-500 dark:text-slate-400">Showing 0 to 0 of 0 entries</div>
+          <div id="ao-pagination" class="flex items-center gap-1"></div>
+        </div>
       </div>
     <?php endif; ?>
   </main>
 </div>
 
-<!-- DataTables Scripts -->
-<link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.tailwindcss.css">
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/2.1.8/js/dataTables.tailwindcss.js"></script>
-
 <!-- Lucide Icons -->
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
 <script>
-$(document).ready(function () {
-    <?php if (!empty($orders)): ?>
-    const table = $('#ordersTable').DataTable({
-        paging: true,
-        pageLength: 5,
-        lengthChange: false,
-        searching: true,
-        order: [[0, 'desc']],
-        pagingType: 'full_numbers',
-        language: {
-            paginate: {
-                first: '«',
-                previous: '‹',
-                next: '›',
-                last: '»'
-            }
-        },
-        columnDefs: [
-            { orderable: false, targets: 6 }
-        ],
-        layout: {
-            topStart: null,
-            topEnd: null,
-            bottomStart: 'info',
-            bottomEnd: 'paging'
-        },
-        drawCallback: function () {
-            lucide.createIcons();
-        }
-    });
+let aoCurrentPage = 1;
 
-    $('#customSearchInput').on('keyup', function () {
-        table.search(this.value).draw();
-    });
+function adminOrders_updateTable(resetPage = false) {
+  if (resetPage) aoCurrentPage = 1;
 
-    $('#customEntriesSelect').on('change', function () {
-        table.page.len(this.value).draw();
-    });
-    <?php endif; ?>
+  const searchValue = (document.getElementById('customSearchInput')?.value || '').toLowerCase().trim();
+  const perPage = parseInt(document.getElementById('customEntriesSelect')?.value || '5');
 
-    lucide.createIcons();
+  const rows = Array.from(document.querySelectorAll('#ordersTable tbody .order-row'));
+
+  const matchingRows = rows.filter(row => !searchValue || row.dataset.search.includes(searchValue));
+
+  const totalEntries = matchingRows.length;
+  const totalPages = Math.ceil(totalEntries / perPage) || 1;
+
+  if (aoCurrentPage > totalPages) aoCurrentPage = totalPages;
+
+  const startIndex = (aoCurrentPage - 1) * perPage;
+  const endIndex = startIndex + perPage;
+
+  rows.forEach(r => r.style.display = 'none');
+  matchingRows.slice(startIndex, endIndex).forEach(r => r.style.display = '');
+
+  const infoEl = document.getElementById('ao-info');
+  if (infoEl) {
+    if (totalEntries === 0) {
+      infoEl.textContent = 'Showing 0 to 0 of 0 entries';
+    } else {
+      infoEl.textContent = `Showing ${startIndex + 1} to ${Math.min(endIndex, totalEntries)} of ${totalEntries} entries`;
+    }
+  }
+
+  const pagEl = document.getElementById('ao-pagination');
+  if (pagEl) {
+    pagEl.innerHTML = '';
+
+    const mkBtn = (label, disabled, onClick) => {
+      const btn = document.createElement('button');
+      btn.className = `px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors ${disabled ? 'opacity-40 cursor-not-allowed text-slate-400' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'}`;
+      btn.textContent = label;
+      btn.disabled = disabled;
+      btn.onclick = onClick;
+      return btn;
+    };
+
+    pagEl.appendChild(mkBtn('«', aoCurrentPage === 1, () => { aoCurrentPage = 1; adminOrders_updateTable(); }));
+    pagEl.appendChild(mkBtn('‹', aoCurrentPage === 1, () => { if (aoCurrentPage > 1) { aoCurrentPage--; adminOrders_updateTable(); } }));
+
+    for (let p = 1; p <= totalPages; p++) {
+      const isActive = p === aoCurrentPage;
+      const pageBtn = document.createElement('button');
+      pageBtn.className = `px-3 py-1 text-xs font-bold rounded-lg transition-colors ${isActive ? 'bg-indigo-600 text-white dark:bg-indigo-500' : 'border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'}`;
+      pageBtn.textContent = p;
+      pageBtn.onclick = () => { aoCurrentPage = p; adminOrders_updateTable(); };
+      pagEl.appendChild(pageBtn);
+    }
+
+    pagEl.appendChild(mkBtn('›', aoCurrentPage === totalPages || totalEntries === 0, () => { if (aoCurrentPage < totalPages) { aoCurrentPage++; adminOrders_updateTable(); } }));
+    pagEl.appendChild(mkBtn('»', aoCurrentPage === totalPages || totalEntries === 0, () => { aoCurrentPage = totalPages; adminOrders_updateTable(); }));
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  <?php if (!empty($orders)): ?>
+  adminOrders_updateTable(true);
+  document.getElementById('customSearchInput')?.addEventListener('input', () => adminOrders_updateTable(true));
+  document.getElementById('customEntriesSelect')?.addEventListener('change', () => adminOrders_updateTable(true));
+  <?php endif; ?>
+  lucide.createIcons();
 });
 </script>

@@ -23,11 +23,14 @@ class StaffOrdersController extends Controller
         $profile = $this->requireActiveStaff();
         $branchId = (int) $profile['branch_id'];
 
+        $isCashier = $profile['position'] === 'cashier';
         $this->view('staff/orders/index', [
             'name' => $_SESSION['user_name'],
             'profile' => $profile,
-            'orders' => $this->orderModel->allByBranch($branchId),
-            'pendingOnlineOrders' => $this->orderModel->countPendingOnlineByBranch($branchId),
+            'orders' => $isCashier
+                ? $this->orderModel->allByBranchForCashier($branchId, (int) $_SESSION['user_id'])
+                : $this->orderModel->allByBranch($branchId),
+            'pendingOnlineOrders' => $isCashier ? 0 : $this->orderModel->countPendingOnlineByBranch($branchId),
             'active' => 'orders',
         ]);
     }
@@ -38,7 +41,9 @@ class StaffOrdersController extends Controller
         $profile = $this->requireActiveStaff();
         $branchId = (int) $profile['branch_id'];
 
-        $order = $this->orderModel->findByIdForBranch($id, $branchId);
+        $order = $profile['position'] === 'cashier'
+            ? $this->orderModel->findByIdForBranchCashier($id, $branchId, (int) $_SESSION['user_id'])
+            : $this->orderModel->findByIdForBranch($id, $branchId);
         if (!$order) {
             $this->redirect('/staff/orders');
             return;

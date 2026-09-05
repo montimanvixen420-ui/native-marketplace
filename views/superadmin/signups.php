@@ -100,10 +100,7 @@ $chartWidth = count($signups) * ($barWidth + $barGap) + $barGap;
       </div>
     </div>
 
-    <div class="mt-6 bg-amber/5 border border-amber/30 rounded-lg p-5">
-      <p class="text-sm font-medium text-gray-900 mb-1">Coming soon</p>
-      <p class="text-xs text-gray-600">Sales totals, top sellers, and order analytics will show up here once your <code class="font-mono bg-white px-1 py-0.5 rounded border border-gray-200">orders</code>/<code class="font-mono bg-white px-1 py-0.5 rounded border border-gray-200">products</code> tables are in place.</p>
-    </div>
+    
   </main>
 
 </div>

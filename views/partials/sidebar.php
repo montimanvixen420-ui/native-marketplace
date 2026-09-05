@@ -26,8 +26,7 @@
                'icon' => '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>'],
               ['key' => 'signups', 'href' => '/superadmin/signups', 'label' => 'Platform Sign-ups',
                'icon' => '<path d="M3 3v18h18"/><path d="M7 15l4-6 3 4 4-7"/>'],
-              ['key' => 'reports', 'href' => '/superadmin/reports', 'label' => 'Customer Reports',
-               'icon' => '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>'],
+         
           ]],
           ['label' => 'Management', 'items' => [
               ['key' => 'users', 'href' => '/superadmin/users', 'label' => 'Users',
@@ -46,6 +45,8 @@
           ['label' => 'Others', 'items' => [
               ['key' => 'content', 'href' => '/superadmin/content', 'label' => 'Content',
                'icon' => '<rect x="3" y="4" width="18" height="14" rx="1"/><path d="M7 21h10M9 18v3M15 18v3"/>'],
+                   ['key' => 'reports', 'href' => '/superadmin/reports', 'label' => 'Customer Reports',
+               'icon' => '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>'],
               ['key' => 'feedback', 'href' => '/superadmin/feedback', 'label' => 'Feedback',
                'icon' => '<path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>'],
               ['key' => 'settings', 'href' => '/superadmin/settings', 'label' => 'System settings',

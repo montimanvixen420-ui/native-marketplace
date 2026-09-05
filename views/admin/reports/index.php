@@ -111,7 +111,13 @@
               </tr>
             <?php endforeach; ?>
           </tbody>
-        </table>
+               </table>
+
+        <!-- Footer & Pagination -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 mt-2 border-t border-gray-100 dark:border-slate-700/60">
+          <div id="reports-info" class="text-xs font-medium text-gray-500 dark:text-gray-400">Showing 0 to 0 of 0 entries</div>
+          <div id="reports-pagination" class="flex items-center gap-1"></div>
+        </div>
       <?php endif; ?>
 
     </section>
@@ -134,13 +140,14 @@ $(function () {
     pageLength: 5,
     lengthChange: false,
     order: [[5, 'desc']], // Sort by Submitted Date DESC
-    layout: {
+        layout: {
       topStart: null,
       topEnd: null,
-      bottomStart: 'info',
-      bottomEnd: 'paging'
+      bottomStart: null,
+      bottomEnd: null
     },
     drawCallback: function () {
+      renderDtPillPagination(this.api(), 'reports-pagination', 'reports-info');
       if (typeof lucide !== 'undefined') lucide.createIcons();
     }
   });

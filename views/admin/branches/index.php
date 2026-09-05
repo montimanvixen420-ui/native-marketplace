@@ -298,7 +298,13 @@
                     </tr>
                   <?php endforeach; ?>
                 </tbody>
-              </table>
+                         </table>
+
+              <!-- Footer & Pagination -->
+              <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 mt-2 border-t border-gray-100 dark:border-slate-700/60">
+                <div id="branch-staff-info" class="text-xs font-medium text-gray-500 dark:text-gray-400">Showing 0 to 0 of 0 entries</div>
+                <div id="branch-staff-pagination" class="flex items-center gap-1"></div>
+              </div>
             <?php endif; ?>
           </div>
         </section>
@@ -494,14 +500,17 @@
   $(document).ready(function () {
     // Staff table: manual init (not the generic data-datatable auto-init) so we can
     // wire a custom status filter + entries-per-page control, same pattern as stock-requests.
-    const branchStaffDT = $('#branchStaffTable').DataTable({
+        const branchStaffDT = $('#branchStaffTable').DataTable({
       paging: true,
       pageLength: 5,
       lengthChange: false,
       searching: true,
       columnDefs: [{ orderable: false, targets: -1 }],
-      layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' },
-      drawCallback: function () { if (typeof lucide !== 'undefined') lucide.createIcons(); }
+      layout: { topStart: null, topEnd: null, bottomStart: null, bottomEnd: null },
+      drawCallback: function () {
+        renderDtPillPagination(this.api(), 'branch-staff-pagination', 'branch-staff-info');
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      }
     });
 
     // Scoped by table id so this plugin never filters any other DataTable on the page.

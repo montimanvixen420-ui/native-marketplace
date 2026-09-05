@@ -77,6 +77,12 @@
           <?php endforeach; ?>
         </tbody>
       </table>
+
+      <!-- Master Inventory Footer & Pagination -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 mt-2 border-t border-gray-100 dark:border-slate-700/60">
+        <div id="inv-info" class="text-xs font-medium text-gray-500 dark:text-gray-400">Showing 0 to 0 of 0 entries</div>
+        <div id="inv-pagination" class="flex items-center gap-1"></div>
+      </div>
     </div>
 
     <!-- POS Stock Section Header -->
@@ -137,6 +143,12 @@
           <?php endforeach; ?>
         </tbody>
       </table>
+
+      <!-- POS Stock Footer & Pagination -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 mt-2 border-t border-gray-100 dark:border-slate-700/60">
+        <div id="pos-info" class="text-xs font-medium text-gray-500 dark:text-gray-400">Showing 0 to 0 of 0 entries</div>
+        <div id="pos-pagination" class="flex items-center gap-1"></div>
+      </div>
     </div>
   </main>
 
@@ -164,10 +176,13 @@ $(document).ready(function () {
         layout: {
             topStart: null,
             topEnd: null,
-            bottomStart: 'info',
-            bottomEnd: 'paging'
+            bottomStart: null,
+            bottomEnd: null
         },
-        drawCallback: function () { lucide.createIcons(); }
+        drawCallback: function () {
+            renderDtPillPagination(this.api(), 'inv-pagination', 'inv-info');
+            lucide.createIcons();
+        }
     });
 
     $('#customSearchInventory').on('keyup', function () { invTable.search(this.value).draw(); });
@@ -195,10 +210,13 @@ $(document).ready(function () {
         layout: {
             topStart: null,
             topEnd: null,
-            bottomStart: 'info',
-            bottomEnd: 'paging'
+            bottomStart: null,
+            bottomEnd: null
         },
-        drawCallback: function () { lucide.createIcons(); }
+        drawCallback: function () {
+            renderDtPillPagination(this.api(), 'pos-pagination', 'pos-info');
+            lucide.createIcons();
+        }
     });
 
     $('#customSearchPos').on('keyup', function () { posTable.search(this.value).draw(); });
