@@ -81,10 +81,10 @@ function renderDtPillPagination(dtApi, paginationId, infoId) {
       : 'Showing ' + (pageInfo.start + 1) + ' to ' + pageInfo.end + ' of ' + pageInfo.recordsDisplay + ' entries';
   }
 
-  var pagEl = document.getElementById(paginationId);
+     var pagEl = document.getElementById(paginationId);
   if (!pagEl) return;
   pagEl.innerHTML = '';
-  if (totalPages <= 1) return;
+  if (totalPages < 1) return; // walang records talaga (0 entries) — wala munang ipapakita
 
   function makeBtn(label, targetPage, disabled, active) {
     var btn = document.createElement('button');

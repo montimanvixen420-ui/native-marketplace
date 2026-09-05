@@ -180,15 +180,22 @@ $sourceHelp = $sourceHelp ?? 'Choose stock already received into your Seller Inv
                 Stock quantity
               </label>
 
+                           <?php $stockLocked = $isEdit && $managerMode; ?>
               <input
                 id="product_stock"
                 type="number"
                 min="0"
                 name="stock"
                 required
+                <?= $stockLocked ? 'readonly' : '' ?>
                 value="<?= htmlspecialchars($product['stock'] ?? '') ?>"
-                class="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
+                class="w-full border border-gray-300 dark:border-slate-600 <?= $stockLocked ? 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500' ?> rounded-lg px-3.5 py-2.5 text-sm focus:outline-none transition"
               >
+              <?php if ($stockLocked): ?>
+                <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                  Quantity is managed through Branch Inventory transfers, not here. Use "Transfer from Branch Inventory" or "Damaged Products" to change it.
+                </p>
+              <?php endif; ?>
             </div>
 
           </div>

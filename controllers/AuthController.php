@@ -5,6 +5,7 @@ require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../models/ProhibitedItem.php';
 require_once __DIR__ . '/../models/SellerApplication.php';
 require_once __DIR__ . '/../models/BranchManager.php';
+require_once __DIR__ . '/../models/Staff.php';
 require_once __DIR__ . '/../core/Mailer.php';
 
 class AuthController extends Controller
@@ -247,12 +248,30 @@ class AuthController extends Controller
             return;
         }
 
-        // Branch Managers have a second, role-specific status (active/inactive/archived) on
+              // Branch Managers have a second, role-specific status (active/inactive/archived) on
         // top of their main account status — check it here too, so a deactivated manager
         // sees a clear message on the login page instead of reaching their dashboard first.
         if ($user['role'] === User::ROLE_MANAGER && !(new BranchManager())->forUser((int) $user['id'])) {
             $this->view('auth/login', ['error' => 'Your Branch Manager access has been deactivated. Please contact your seller/admin.']);
             return;
+        }
+
+        // Same idea for regular Staff (Cashier, Order Staff, Inventory Staff, Customer
+        // Service Staff): their staff_profiles row has its own active/inactive/archived
+        // status separate from the main account. Without this check, a deactivated staff
+        // member's credentials still "work" here, only to get silently bounced back to
+        // /login by requireActiveStaff() once they reach their dashboard — with no
+        // message at all, which just looks like the page refreshed for no reason.
+        if ($user['role'] === User::ROLE_STAFF) {
+            $staffProfile = (new Staff())->profileForUser((int) $user['id']);
+            if (!$staffProfile) {
+                $this->view('auth/login', ['error' => 'Your staff account could not be found. Please contact your Branch Manager.']);
+                return;
+            }
+            if ($staffProfile['status'] !== 'active') {
+                $this->view('auth/login', ['error' => 'Your staff account has been deactivated. Please contact your Branch Manager.']);
+                return;
+            }
         }
 
         session_regenerate_id(true);

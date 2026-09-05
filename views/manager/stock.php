@@ -10,8 +10,9 @@
     <header class="mb-6">
       <p class="eyebrow text-brand">Branch Stock</p>
       <h1 class="mt-1 font-display text-3xl font-bold text-ink dark:text-white"><?= htmlspecialchars($profile['branch_name'] ?? 'Your Branch') ?></h1>
-      <p class="mt-2 text-sm text-gray-500 dark:text-white/60">
+           <p class="mt-2 text-sm text-gray-500 dark:text-white/60">
         Adjust stock for products your branch carries. Every change needs a reason — your Seller can see the full history.
+        This shows every product assigned to your branch, including ones with 0 stock, so you can see exactly what needs restocking.
       </p>
     </header>
 

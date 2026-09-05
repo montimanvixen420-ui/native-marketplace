@@ -23,7 +23,40 @@
       </button>
     </header>
 
-    <section class="dashboard-panel overflow-x-auto">
+       <section class="dashboard-panel overflow-x-auto">
+
+           <!-- Custom Search & Filters Toolbar -->
+      <div class="flex flex-col sm:flex-row flex-wrap items-center justify-end gap-3 mb-4">
+        <div class="relative w-full sm:w-72">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="staffSearchInput" placeholder="Search staff..." class="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-200 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand">
+        </div>
+
+        <select id="staffRoleFilter" class="bg-white border border-gray-200 text-sm rounded-lg px-2 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand">
+          <option value="">All roles</option>
+          <?php foreach ($positions as $v => $label): ?>
+            <option value="<?= htmlspecialchars($label) ?>"><?= htmlspecialchars($label) ?></option>
+          <?php endforeach; ?>
+        </select>
+
+        <select id="staffStatusFilter" class="bg-white border border-gray-200 text-sm rounded-lg px-2 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand">
+          <option value="">All statuses</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+          <option value="Suspended">Suspended</option>
+        </select>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <select id="staffEntriesSelect" class="bg-white border border-gray-200 text-sm rounded-lg px-2 py-1.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="20">20</option>
+          </select>
+          <span class="text-sm text-gray-500">entries per page</span>
+        </div>
+      </div>
+
       <table id="staffTable" class="display w-full text-left text-sm">
         <thead>
           <tr><th>Profile</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Date Created</th><th>Actions</th></tr>
@@ -70,8 +103,14 @@
               </td>
             </tr>
           <?php endforeach; ?>
-        </tbody>
+              </tbody>
       </table>
+
+      <!-- Footer & Pagination -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 mt-2 border-t border-gray-100">
+        <div id="staff-info" class="text-xs font-medium text-gray-500">Showing 0 to 0 of 0 entries</div>
+        <div id="staff-pagination" class="flex items-center gap-1"></div>
+      </div>
     </section>
   </main>
 </div>
@@ -125,17 +164,36 @@
   </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-$(function () {
-  $('#staffTable').DataTable({
+document.addEventListener('DOMContentLoaded', function () {
+  const staffTable = $('#staffTable').DataTable({
     responsive: true,
     columnDefs: [{ orderable: false, targets: -1 }],
-    lengthMenu: [[5, 10, 15, 20], [5, 10, 15, 20]],
     pageLength: 5,
-    language: { emptyTable: 'No staff yet — click "Add Staff" to create the first one for this branch.' }
+    lengthChange: false,
+    searching: true,
+    language: { emptyTable: 'No staff yet — click "Add Staff" to create the first one for this branch.' },
+    layout: {
+        topStart: null,
+        topEnd: null,
+        bottomStart: null,
+        bottomEnd: null
+    },
+    drawCallback: function () {
+        renderDtPillPagination(this.api(), 'staff-pagination', 'staff-info');
+    }
+  });
+  $('#staffSearchInput').on('keyup', function () { staffTable.search(this.value).draw(); });
+  $('#staffEntriesSelect').on('change', function () { staffTable.page.len(this.value).draw(); });
+
+  $('#staffRoleFilter').on('change', function () {
+    var val = this.value;
+    staffTable.column(3).search(val ? '^' + $.fn.dataTable.util.escapeRegex(val) + '$' : '', true, false).draw();
+  });
+
+  $('#staffStatusFilter').on('change', function () {
+    var val = this.value;
+    staffTable.column(4).search(val ? '^' + $.fn.dataTable.util.escapeRegex(val) + '$' : '', true, false).draw();
   });
 
   function openModal(id) { $('#' + id).removeClass('hidden').addClass('flex'); }

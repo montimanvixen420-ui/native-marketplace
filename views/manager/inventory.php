@@ -1,7 +1,8 @@
 <div class="flex min-h-screen bg-gray-50"><?php require __DIR__.'/../partials/admin-sidebar.php';?>
 <main class="flex-1 px-5 py-7 md:px-8">
     <h1 class="font-display text-2xl font-semibold text-gray-900">Branch inventory</h1>
-    <p class="mt-1 text-sm text-gray-500"><?= $profile['position']==='branch_manager' ? 'Monitor stock assigned to your branch. Add products to Branch POS from the Branch POS Products page.' : 'Review branch stock and report any damaged items to your Branch Manager.' ?></p>
+       <p class="mt-1 text-sm text-gray-500"><?= $profile['position']==='branch_manager' ? 'Products your branch currently has available to sell or transfer. Add products to Branch POS from the Branch POS Products page.' : 'Review branch stock and report any damaged items to your Branch Manager.' ?></p>
+    <p class="mt-1 text-xs text-gray-400">Only products with stock above 0 are listed here. To see everything assigned to your branch — including items at 0 — check the <a href="/manager/stock" class="underline text-brand">Stock</a> page.</p>
     <?php if(!empty($error)): ?><div class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"><?=htmlspecialchars($error)?></div><?php endif; ?>
     <?php if(!empty($success)): ?><div class="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"><?=htmlspecialchars($success)?></div><?php endif; ?>
     <div class="mt-6 overflow-hidden rounded-lg border bg-white">
@@ -13,7 +14,7 @@
             </tr>
         </thead>
         <tbody>
-            <?php foreach($rows as $r):if(!(int)$r['stock'])continue;?>
+           <?php foreach($rows as $r): ?>
             <tr class="border-b">
                 <td class="p-3 font-medium"><?=htmlspecialchars($r['product_name'])?></td>
                 <td class="p-3"><?= (int)$r['stock']?></td>

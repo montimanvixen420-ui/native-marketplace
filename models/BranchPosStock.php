@@ -39,9 +39,16 @@ class BranchPosStock {
       $this->db->prepare('INSERT INTO branch_inventory_transfers (branch_id,product_id,variant_size,variant_color,quantity,direction,performed_by_user_id,note) VALUES (:branch_id,:product_id,:size,:color,:quantity,:direction,:user_id,:note)')->execute(['branch_id'=>$branchId,'product_id'=>$productId,'size'=>$size,'color'=>$color,'quantity'=>$quantity,'direction'=>$direction,'user_id'=>$userId,'note'=>$note?:null]);$this->db->commit();return ['success'=>true];
     }catch(Throwable $e){if($this->db->inTransaction())$this->db->rollBack();return ['success'=>false,'error'=>$e->getMessage()];}
   }
-  public function productsForBranch(int $branchId): array {
+    public function productsForBranch(int $branchId): array {
     $stmt=$this->db->prepare("SELECT p.id AS product_id,p.name,p.price,p.image_url,p.status,bps.variant_size,bps.variant_color,bps.stock FROM branch_pos_stock bps INNER JOIN products p ON p.id=bps.product_id WHERE bps.branch_id=:branch_id AND bps.stock>0 ORDER BY p.name,bps.variant_color,bps.variant_size");
     $stmt->execute(['branch_id'=>$branchId]);return $stmt->fetchAll();
+  }
+
+  /** Kabuuang totoong stock ng isang listing sa Branch POS (lahat ng variant rows), para sa display sa Edit form. */
+  public function totalStockForProduct(int $branchId,int $productId):int{
+    $stmt=$this->db->prepare('SELECT COALESCE(SUM(stock),0) FROM branch_pos_stock WHERE branch_id=:branch_id AND product_id=:product_id');
+    $stmt->execute(['branch_id'=>$branchId,'product_id'=>$productId]);
+    return (int)$stmt->fetchColumn();
   }
 
   /** Creates a separate Branch POS listing from one Branch Inventory source. */
