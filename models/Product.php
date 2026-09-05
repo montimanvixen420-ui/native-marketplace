@@ -26,6 +26,10 @@ class Product
         // the real sellable quantity lives in seller_pos_stock instead. Coalesce with
         // that so the number shown here matches what's actually sellable. Raw Seller
         // Inventory items (no seller_pos_stock row) just keep using products.stock.
+        // Raw Seller Inventory items (inventory_source_product_id IS NULL) are excluded
+        // too — those are just master stock, not something for sale yet. They only
+        // belong here once the Seller actually "adds" them as a product/listing (which
+        // is exactly what sets inventory_source_product_id).
         $stmt = $this->db->prepare(
             "SELECT p.*, COALESCE(sps.total_stock, p.stock) AS stock
              FROM products p
@@ -37,6 +41,7 @@ class Product
              ) sps ON sps.product_id = p.id
              WHERE p.seller_id = :seller_id
                AND p.status <> 'archived'
+               AND p.inventory_source_product_id IS NOT NULL
                AND p.id NOT IN (SELECT product_id FROM product_branches)
              ORDER BY p.created_at DESC"
         );
@@ -59,6 +64,7 @@ class Product
              ) sps ON sps.product_id = p.id
              WHERE p.seller_id = :seller_id
                AND p.status = 'archived'
+               AND p.inventory_source_product_id IS NOT NULL
                AND p.id NOT IN (SELECT product_id FROM product_branches)
              ORDER BY p.updated_at DESC"
         );
@@ -327,6 +333,7 @@ class Product
              ) sps ON sps.product_id = p.id
              WHERE p.seller_id = :seller_id
                AND p.status <> 'archived'
+               AND p.inventory_source_product_id IS NOT NULL
                AND p.id NOT IN (SELECT product_id FROM product_branches)"
         );
         $stmt->execute(['seller_id' => $sellerId, 'sps_seller_id' => $sellerId, 'threshold' => $lowStockThreshold]);
@@ -348,6 +355,7 @@ class Product
              ) sps ON sps.product_id = p.id
              WHERE p.seller_id = :seller_id
                AND p.status <> 'archived'
+               AND p.inventory_source_product_id IS NOT NULL
                AND p.id NOT IN (SELECT product_id FROM product_branches)
                AND (CASE WHEN pv.id IS NULL THEN COALESCE(sps.total_stock, p.stock) ELSE pv.stock END) <= :threshold
              ORDER BY stock ASC, p.name ASC"
@@ -362,6 +370,20 @@ class Product
         $sql = 'SELECT id, name, stock, stock_request_id FROM products WHERE seller_id = :seller_id AND stock > 0';
         if ($this->hasColumn('inventory_source_product_id')) $sql .= ' AND inventory_source_product_id IS NULL';
         $sql .= ' ORDER BY name ASC';
+        $stmt = $this->db->prepare($sql); $stmt->execute(['seller_id' => $sellerId]); return $stmt->fetchAll();
+    }
+
+    /**
+     * ALL of a seller's raw Seller Inventory (master stock) — including 0-stock rows
+     * marked "restock needed" — for the Seller Inventory page. Unlike
+     * inventorySourcesBySeller() (used for the "Add product" dropdown), this doesn't
+     * hide out-of-stock rows, since the page needs to show those too.
+     */
+    public function rawInventoryBySeller(int $sellerId): array
+    {
+        $sql = 'SELECT * FROM products WHERE seller_id = :seller_id AND status <> \'archived\'';
+        if ($this->hasColumn('inventory_source_product_id')) $sql .= ' AND inventory_source_product_id IS NULL';
+        $sql .= ' ORDER BY updated_at DESC';
         $stmt = $this->db->prepare($sql); $stmt->execute(['seller_id' => $sellerId]); return $stmt->fetchAll();
     }
 
@@ -491,6 +513,26 @@ class Product
              ORDER BY category ASC"
         );
         $stmt->execute(['seller_id' => $sellerId]);
+
+        return array_column($stmt->fetchAll(), 'category');
+    }
+
+    /**
+     * Distinct categories used by ONE branch's own Branch POS listings only — kept
+     * separate from the seller's own categories (distinctCategoriesForSeller) so a
+     * new category added by the Seller (or by a different branch) doesn't leak into
+     * this branch's "Add product" dropdown.
+     */
+    public function distinctCategoriesForBranch(int $branchId): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT DISTINCT p.category
+             FROM products p
+             INNER JOIN product_branches pb ON pb.product_id = p.id
+             WHERE pb.branch_id = :branch_id AND p.category IS NOT NULL AND p.category <> ''
+             ORDER BY p.category ASC"
+        );
+        $stmt->execute(['branch_id' => $branchId]);
 
         return array_column($stmt->fetchAll(), 'category');
     }

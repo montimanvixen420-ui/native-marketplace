@@ -20,6 +20,7 @@ class ProductController extends Controller
     private const ALLOWED_EXTENSIONS = ['png', 'jpg', 'jpeg'];
     private const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg'];
     private const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    private const MAX_STOCK = 1000000; // sanity ceiling — catches typos/overflow when a listing has no inventory link to cap it
 
     public function __construct()
     {
@@ -151,9 +152,7 @@ class ProductController extends Controller
             'product' => $product,
             'error' => null,
             'variants' => $this->productVariantModel->allByProduct($id),
-            'sourceStockLimit' => !empty($product['stock_request_id'])
-                ? ($this->stockRequestModel->findFulfilledForSeller((int) $product['stock_request_id'], $this->sellerId())['quantity_requested'] ?? null)
-                : null,
+            'sourceStockLimit' => $this->stockCapFor($product),
             'active' => 'products',
                 'categories' => $this->productModel->distinctCategoriesForSeller($this->sellerId()),
         ]);
@@ -184,36 +183,19 @@ class ProductController extends Controller
         }
 
         if (!empty($variants)) $data['stock'] = array_sum(array_column($variants, 'stock'));
-        $sourceStock = !empty($existing['stock_request_id'])
-            ? $this->stockRequestModel->findFulfilledForSeller((int) $existing['stock_request_id'], $this->sellerId())
-            : null;
-        if ($sourceStock && $data['stock'] > (int) $sourceStock['quantity_requested']) {
+
+        // Cap this listing's stock at what its inventory source can actually back (see stockCapFor()).
+        // Listings with no known inventory link fall through to the MAX_STOCK sanity check in validate().
+        $stockCap = $this->stockCapFor($existing);
+        if ($stockCap !== null && $data['stock'] > $stockCap) {
             $this->view('admin/products/form', [
                 'mode' => 'edit', 'product' => $_POST,
-                'error' => 'Product stock cannot be more than the selected Seller Inventory stock (' . (int) $sourceStock['quantity_requested'] . ').',
-                'sourceStockLimit' => (int) $sourceStock['quantity_requested'],
+                'error' => 'Product stock cannot be more than your available Seller Inventory stock (' . $stockCap . ').',
+                'sourceStockLimit' => $stockCap,
                 'active' => 'products',
                 'categories' => $this->productModel->distinctCategoriesForSeller($this->sellerId()),
             ]);
             return;
-        }
-
-        // This listing was created from a Seller Inventory item (see inventorySourcesBySeller /
-        // createListingFromInventory). Raising its stock draws more from that same reserve, so cap
-        // it at what's still unused there, plus whatever this listing already holds.
-        if (!empty($existing['inventory_source_product_id'])) {
-            $invSource = $this->productModel->inventorySourceForSeller((int) $existing['inventory_source_product_id'], $this->sellerId());
-            $invCap = ((int) ($invSource['stock'] ?? 0)) + (int) $existing['stock'];
-            if ($invSource && $data['stock'] > $invCap) {
-                $this->view('admin/products/form', [
-                    'mode' => 'edit', 'product' => $_POST,
-                    'error' => 'Product stock cannot be more than your available Seller Inventory stock (' . $invCap . ').',
-                    'sourceStockLimit' => $invCap,
-                    'active' => 'products',
-                'categories' => $this->productModel->distinctCategoriesForSeller($this->sellerId()),
-                ]);
-                return;
-            }
         }
         // Image is optional on edit — only replace it if a new file was uploaded
         $imageResult = $this->handleImageUpload(required: false);
@@ -289,6 +271,28 @@ class ProductController extends Controller
         $this->redirect($restored
             ? '/products?success=' . urlencode('Product restored.')
             : '/products?view=archived&error=' . urlencode('Unable to restore this product.'));
+    }
+
+    /**
+     * Max stock this listing may legitimately hold, based on its inventory source.
+     * Null means "no inventory link known" — validate()'s MAX_STOCK sanity check is the
+     * only thing capping those (see the "phantoms" bug: no link, so nothing capped it).
+     */
+    private function stockCapFor(array $product): ?int
+    {
+        if (!empty($product['stock_request_id'])) {
+            $fulfilled = $this->stockRequestModel->findFulfilledForSeller((int) $product['stock_request_id'], $this->sellerId());
+            return $fulfilled['quantity_requested'] ?? null;
+        }
+        if (!empty($product['inventory_source_product_id'])) {
+            $invSource = $this->productModel->inventorySourceForSeller((int) $product['inventory_source_product_id'], $this->sellerId());
+            if ($invSource) {
+                // What's still unused in Seller Inventory, PLUS what this listing already holds
+                // (since that portion was already deducted from Seller Inventory when created/last raised).
+                return ((int) $invSource['stock']) + (int) $product['stock'];
+            }
+        }
+        return null;
     }
 
     /**
@@ -395,6 +399,10 @@ class ProductController extends Controller
 
         if (!ctype_digit((string) $stock) && !is_int($stock)) {
             return ['error' => 'Please enter a valid stock quantity.'];
+        }
+
+        if ((int) $stock > self::MAX_STOCK) {
+            return ['error' => 'Stock quantity cannot exceed ' . number_format(self::MAX_STOCK) . '.'];
         }
 
         if (!in_array($status, ['active', 'inactive'], true)) {

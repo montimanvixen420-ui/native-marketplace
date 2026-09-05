@@ -54,7 +54,12 @@
         <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
           <?php foreach($products as $p): ?>
             <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/50 transition-colors" data-stock-status="<?= (int)$p['stock'] < 1 ? 'out' : 'in' ?>">
-              <td class="px-5 py-4 font-semibold text-gray-900 dark:text-gray-100"><?= htmlspecialchars($p['name']) ?></td>
+              <?php
+                // Sort key: in-stock items always rank above out-of-stock ones (big
+                // fixed offset), and within each group, most recently updated first.
+                $sortKey = ((int) $p['stock'] > 0 ? 1000000000000 : 0) + strtotime($p['updated_at'] ?? $p['created_at'] ?? 'now');
+              ?>
+              <td class="px-5 py-4 font-semibold text-gray-900 dark:text-gray-100" data-order="<?= $sortKey ?>"><?= htmlspecialchars($p['name']) ?></td>
               <td class="px-5 py-4 text-right whitespace-nowrap">
                 <?php if ((int)$p['stock'] < 1): ?>
                   <span class="inline-flex items-center gap-1.5 rounded-full bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800 px-3 py-1 text-xs font-semibold text-red-700 dark:text-red-300 shadow-sm">
@@ -155,7 +160,7 @@ $(document).ready(function () {
         pageLength: 5,
         lengthChange: false,
         searching: true,
-        order: [[0, 'asc']],
+        order: [[0, 'desc']], // In-stock items first, then most recently updated (see data-order on the Product cell)
         layout: {
             topStart: null,
             topEnd: null,
